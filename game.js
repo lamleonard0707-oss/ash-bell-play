@@ -301,7 +301,7 @@ function frame(ts){
  requestAnimationFrame(frame);
 }
 function step(ts){
- let dt=Math.min((ts-last)/1000,.04);last=ts;time+=dt;if(mode==='play')update(dt);damageFlash=Math.max(0,damageFlash-dt*2);$('#damagewash').style.opacity=damageFlash;
+ let dt=Math.min((ts-last)/1000,.04);last=ts;if(mobileOrientationBlocked)return;time+=dt;if(mode==='play')update(dt);damageFlash=Math.max(0,damageFlash-dt*2);$('#damagewash').style.opacity=damageFlash;
  if(mode==='play'||mode==='select'){
   for(let i=vfx.length-1;i>=0;i--){vfx[i].age+=dt;if(vfx[i].age>vfx[i].duration)vfx.splice(i,1)}for(let i=scorches.length-1;i>=0;i--){scorches[i].life-=dt;if(scorches[i].life<=0)scorches.splice(i,1)}for(const e of effects)e.life-=dt;effects=effects.filter(e=>e.life>0);
   for(const n of numbers)n.life-=dt;numbers=numbers.filter(n=>n.life>0);

@@ -1,0 +1,82 @@
+/* v0.12.1: one landscape layout, after historical portrait/desktop rules. */
+:root{--safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+#rotate-device{display:none;position:fixed;inset:0;z-index:1000;background:radial-gradient(ellipse at center,#30241a,#0c0908 75%);color:#e8d3ad;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:28px;line-height:1.7}
+#rotate-device h2{font-size:26px;margin:14px 0 6px;letter-spacing:2px}
+#rotate-device p{font-size:15px;margin:5px 0;max-width:28em}
+#rotate-device small{margin-top:26px;color:#bba783;font-size:12px}
+.rotate-icon{font:80px Georgia;color:#c9a66b}
+@media (orientation:portrait) and (max-width:900px) and (any-pointer:coarse),(orientation:portrait) and (max-width:600px){#rotate-device{display:flex}}
+#classes{grid-template-columns:repeat(6,minmax(0,1fr))}
+#panel,#modal{z-index:30}
+#panel .panel-head{position:sticky;top:0;z-index:2;background:#201911}
+#panel button,#panel p,#panel small{overflow-wrap:anywhere}
+#panel .panel-head h2{min-width:0;line-height:1.4}
+#tree-learn{white-space:normal}
+@media (orientation:landscape) and (max-height:600px){
+ header{height:44px;padding:4px max(12px,var(--safe-right)) 4px max(12px,var(--safe-left));gap:10px;align-items:center}
+ .brand{font-size:17px;flex-shrink:0}.brand span{display:none}
+ .topright{gap:5px}.topright button{min-height:34px;font-size:11px;padding:5px 9px;white-space:nowrap}
+ #select{display:grid;grid-template-columns:minmax(155px,26%) minmax(0,1fr);grid-template-rows:auto auto auto auto auto;align-content:start;align-items:center;gap:7px 18px;padding:52px max(18px,var(--safe-right)) max(12px,var(--safe-bottom)) max(18px,var(--safe-left));overflow-y:auto}
+ #select>*{position:static;inset:auto;min-width:0;max-width:100%;transform:none}
+ #select .select-heading{grid-column:1;grid-row:1;text-align:left}
+ #select h1{font-size:27px;margin:7px 0;letter-spacing:3px}
+ #select .eyebrow{font-size:9px;letter-spacing:1px}
+ #select .intro{font-size:11px;line-height:1.6;margin:5px 0}
+ #select .roster-stage{grid-column:2;grid-row:1;height:clamp(105px,35vh,185px);min-height:105px;width:100%!important;margin:0}
+ #select #classes{grid-column:2;grid-row:2;width:100%;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+ #select .classcard{padding:6px 2px;min-height:44px}
+ #select #classes .classcard h3{font-size:12px!important;letter-spacing:0;white-space:normal;line-height:1.4;margin:0}
+ #select .classcard small,#select .classcard p{display:none}
+ #select .difficulty-choice{grid-column:1;grid-row:2;margin:0;font-size:11px;line-height:1.5}
+ #select .difficulty-choice select{width:100%;max-width:100%;padding:6px;margin:2px 0 0;min-height:34px;font-size:12px}
+ #select .selectednote{grid-column:2;grid-row:3;margin:0;font-size:11px;line-height:1.5;min-height:0;text-align:left}
+ #select .primary{grid-column:1;grid-row:3;min-width:0;width:100%;min-height:42px;padding:7px;font-size:12px;letter-spacing:1px}
+ #select .continue-game{grid-column:1;grid-row:4;margin:0;width:100%;min-width:0;min-height:38px;padding:7px;font-size:12px}
+ #select #tierprogress{grid-column:2;grid-row:4;margin:0;font-size:11px;line-height:1.5;text-align:left}
+ #select #continue-info{grid-column:1/3;grid-row:5;margin:0;font-size:10px;line-height:1.6}
+ #select .hint,#select .original-label{display:none}
+ .quest{top:51px;left:max(12px,var(--safe-left));width:166px;line-height:1.4}
+ .quest b{font-size:11px;line-height:1.5;margin:2px 0}.quest>span,.quest small{font-size:9px;letter-spacing:0}
+ .quest #pace{position:static;margin-top:5px;min-height:32px;font-size:11px}
+ .mapbox{top:50px;right:max(12px,var(--safe-right));width:86px}.mapbox canvas{width:86px;height:58px}.mapbox span{font-size:9px;line-height:1.4}
+ #targetbar,#bossbar{top:51px;left:50%;width:min(235px,32vw)}
+ #targetname{font-size:11px;line-height:1.4}#targettype{font-size:9px;line-height:1.4}
+ #routehint{top:110px;left:50%;width:33%;max-width:280px;font-size:10px;line-height:1.5;text-align:center}
+ #nextmap{top:145px;font-size:12px;min-height:38px;padding:7px 12px}
+ #toast{top:43%;max-width:48%;font-size:13px;line-height:1.5;letter-spacing:0}
+ #loot-label{max-width:45%;font-size:11px;line-height:1.5}
+ .bottom-deck{height:70px}.desktophelp{display:none}
+ .vitals{bottom:calc(5px + var(--safe-bottom));gap:7px;left:50%;width:250px;justify-content:center}
+ .orb{width:48px;height:48px;flex-shrink:0}.orb span{font-size:16px}.orb small{font-size:9px;bottom:3px}
+ .level{width:130px;margin:0}.level>b{font-size:11px}.level>span{font-size:10px}.level>small{font-size:8px;margin:1px 0;line-height:1.4}.level>div{margin:2px 0}.level #skillstatus{display:none}
+ #quickbar{top:auto;bottom:calc(76px + var(--safe-bottom));left:50%;gap:4px;width:240px;justify-content:center}
+ #quickbar button{width:77px;min-width:0;min-height:42px;padding:4px 2px;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+ #difficulty-label{display:none}
+ #skillcycle{top:auto;bottom:calc(155px + var(--safe-bottom));right:max(12px,var(--safe-right));min-height:34px;max-width:185px;font-size:10px;padding:5px 8px;line-height:1.4}
+ #aimhint{top:auto;bottom:calc(125px + var(--safe-bottom));left:50%;max-width:35%;font-size:11px;line-height:1.5}
+ #joystick{width:88px;height:88px}
+ .actions .minor{width:44px;height:44px}.actions button{width:52px;height:52px}.actions #attack{width:58px;height:58px}
+ .actions span{white-space:normal;line-height:1.15;text-align:center;font-size:9px}.actions #skill>span{font-size:8px;padding:1px;bottom:2px}.actions #attack svg{width:27px;height:27px}
+ #panel{padding:6px max(10px,var(--safe-right)) max(6px,var(--safe-bottom)) max(10px,var(--safe-left));z-index:30}
+ #panel .feature-panel{max-height:calc(100dvh - 12px - var(--safe-bottom));padding:10px 12px;overflow-y:auto}
+ #panel .feature-panel:has(#treeview:not([hidden])){height:calc(100dvh - 12px - var(--safe-bottom));overflow:hidden}
+ #panel .panel-head{padding-bottom:5px}#panel .panel-head button{min-height:36px;width:40px}
+ #treeview>.panel-note{font-size:10px;line-height:1.45;margin:4px 0;max-height:30px;overflow-y:auto}
+ #tree-scroll{min-height:60px}
+ .tree-detail{display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:3px 10px;padding:7px 10px;max-height:38vh;overflow-y:auto}
+ .tree-detail h3,.tree-detail p,.tree-detail small{grid-column:1;font-size:11px;line-height:1.5;margin:0}
+ .tree-detail button{grid-column:2;grid-row:1/4;width:100%;min-height:44px;align-self:center;font-size:12px;margin:0}
+ #panel .paperdoll-layout{grid-template-columns:minmax(100px,1fr) 170px minmax(100px,1fr);gap:10px;min-height:0}
+ #panel #paperdoll{width:170px;height:255px;max-height:none}
+ .gear-tabs,.save-actions,.layout-actions{flex-wrap:wrap;gap:6px}
+ #layoutbar{top:50px;padding:7px;width:260px}#layoutbar button{min-height:36px}
+}
+
+@media (orientation:landscape) and (max-height:600px){
+ .actions #potion span{font-size:8px;white-space:nowrap}
+}
+@media (orientation:landscape) and (max-height:600px) and (max-width:620px){
+ #quickbar{left:calc(50% - 36px);width:204px;gap:3px}#quickbar button{width:66px;font-size:9px}
+ .vitals{left:calc(50% - 36px);width:210px;gap:5px}.level{width:104px}.orb{width:43px;height:43px}
+ .quest{width:145px}.quest>span{font-size:8px}
+}
