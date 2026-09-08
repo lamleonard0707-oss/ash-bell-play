@@ -185,6 +185,7 @@ function campaignGate(){const stage=pendingChapter;if(stage<1)return;const m=map
 function bossDamage(f){return 10*Math.pow(1.29,f.mapId)*rnd(.9,1.15)}
 function bossMove(f,move,aim,at){
  const phase=f.bossPhase||0,dmg=bossDamage(f),m=mapSpec(f.mapId);
+ beginActorGesture(f,['charge','hook','execute','quake'].includes(move)?'strike':'cast',aim,.75);emitEnemyTechnique(f,move,aim);
  switch(move){
   case 'fan':{const n=6+phase*2+Math.floor(rnd(0,2));for(let i=0;i<n;i++)enemyShot(f.x,f.y,aim+(i-(n-1)/2)*rnd(.16,.22),150+f.mapId*5,dmg,2);playSfx('cast',f.x,0);break}
   case 'orbit':{const n=10+phase*4;for(let i=0;i<n;i++)enemyShot(f.x,f.y,i*Math.PI*2/n+f.phase,140+f.mapId*5,dmg,2);f.phase+=rnd(.2,.45);playSfx('cast',f.x,2);break}
@@ -288,6 +289,7 @@ function updateCampaignEnemy(f,dt){
  if(f.state==='windup'){
   if(f.stateT>0)return;f.state='recover';f.stateT=rnd(.42,.66);
   const at=f.aim||{x:p.x,y:p.y},aim=Math.atan2(at.y-f.y,at.x-f.x),dmg=4*Math.pow(1.3,f.mapId)*rnd(.85,1.2);
+  beginActorGesture(f,f.type===2?'cast':'strike',aim,.5);emitEnemyTechnique(f,f.type===2?'volley':f.type===0?'charge':'slash',aim);
   if(f.type===2){for(let i=0;i<(f.mapId>=6?3:1);i++)enemyShot(f.x,f.y,aim+(i-(f.mapId>=6?1:0))*.16,175+f.mapId*8,dmg,f.mapId%4,f.affix)}
   else if(f.type===0){f.state='charge';f.stateT=rnd(.2,.32);f.chargeA=aim}
   else if(d<85){hurt(dmg+3,f.affix,{contact:true});ring(f.x,f.y,m.color,80,.3)}
@@ -304,7 +306,7 @@ function drawCampaignEnemy(f,dead){
  const m=mapSpec(f.mapId),lanky=f.lanky||1;
  const height=(f.type===3?150*(f.scale/1.65):88)*(f.type===1?1.15:1)*lanky*(f.type===3?1:(f.scale||1));
  const moving=['seek','charge','sweep','hook'].includes(f.state)&&!f.frozen;
- const step=Math.abs(Math.sin(f.walk||0)),lift=moving?step*3*(f.bob||1):0,hover=f.type===3&&(f.bob||0)>1.4?Math.sin(time*1.6+f.phase)*6:0;
+ const step=Math.abs(Math.sin(f.walk||0)),lift=0,hover=f.type===3&&(f.bob||0)>1.4?Math.sin(time*1.6+f.phase)*6:0;
  ctx.save();ctx.globalAlpha=dead?Math.min(.55,f.fade/5):1;
  // contact shadow tracks the step so nothing looks like it is floating
  ctx.fillStyle='#05070a';ctx.globalAlpha=(dead?.3:.5)*(1-lift/9);ctx.beginPath();ctx.ellipse(f.x,f.y,height*.2*(1-lift/26),9*(1-lift/22),0,0,7);ctx.fill();ctx.globalAlpha=dead?Math.min(.55,f.fade/5):1;
@@ -313,13 +315,15 @@ function drawCampaignEnemy(f,dead){
  if(!dead&&f.escortOf&&!f.decoy)groundRing(f.x,f.y,26,'#ffd08a',.55,2);
  ctx.translate(f.x,f.y-lift-hover);if(directed?directed.flip:f.x>p.x)ctx.scale(-1,1);
  ctx.scale(1/Math.sqrt(lanky),lanky);
- if(dead){ctx.rotate(-.9);ctx.scale(1,.5)}else if(moving)ctx.rotate(Math.sin(f.walk)*.05);
+ if(dead){const fall=clamp((f.deathAge||0)/.5,0,1);ctx.rotate(-fall*.9);ctx.scale(1,1-fall*.5)}
  const filters=[];
  if(f.frozen>0)filters.push('brightness(1.25) saturate(.3)');else if(f.hit>0)filters.push('brightness(1.7)');else if(f.type===1)filters.push('brightness(.86)');
  if(f.decoy)filters.push('brightness(1.3) saturate(.4)');
  if(filters.length)ctx.filter=filters.join(' ');
- drawMotionTile(ctx,m.tint&&!dead?tintedTile(tile,m.tint,(f.mapId??routeStage)+':'+(directed?directed.row:'x')+':'+(f.type===3?'b':'g')):tile,0,0,height);
+ const dressed=m.tint&&!dead?tintedTile(tile,m.tint,(f.mapId??routeStage)+':'+(directed?directed.row:'x')+':'+(f.type===3?'b':'g')):tile;
+ if(dead)drawMotionTile(ctx,dressed,0,0,height);else drawRiggedTile(ctx,dressed,0,0,height,orientRigPose(actorRigPose(f,enemyMotionProfile(f)),directed?directed.flip:f.x>p.x));
  ctx.restore();
+ if(!dead)drawEnemyTechnique(f,height);
  if(!dead&&f.elite)groundRing(f.x,f.y,30,f.color,.8,2);
  if(!dead&&f.type===3&&f.overheat>0)groundRing(f.x,f.y,160*(1-f.overheat/2.2),'#ff8a3c',.8,4);
  if(!dead&&f.type===3&&f.guardUp){groundRing(f.x,f.y,52,'#ffe3a8',.85,3);ctx.save();ctx.font='12px Georgia';ctx.textAlign='center';ctx.fillStyle='#ffe3a8';ctx.fillText('護衛結界 · 先清護衛',f.x,f.y-height-22);ctx.restore()}

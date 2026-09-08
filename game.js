@@ -52,11 +52,11 @@ function figure(c,x,y,id,t=0,scale=1,dx=1,dy=1,action=0){
  if(!heroFrames.length)return;
  const f=facing(dx,dy),h=91*scale,bob=0;
  const hover=(p&&id===chosen&&id===5)?angelLift()*scale:0;
- const stepping=p&&id===chosen&&heroMotion?Math.abs(Math.sin(walkPhase)):0,lift=stepping*3.2*scale+hover,lean=p&&id===chosen&&heroMotion?Math.sin(walkPhase*.5)*.03*(f.flip?-1:1):0;
+ const stepping=p&&id===chosen&&heroMotion?Math.abs(Math.sin(walkPhase)):0,lift=hover,lean=0;
  const air=hover/46;
  c.save();c.fillStyle='#080503';c.globalAlpha=Math.max(.08,.44*(1-stepping*3.2/9)*(1-air*.62));c.beginPath();c.ellipse(x,y+1,18*scale*(1-stepping*.1)*(1-air*.34),7*scale*(1-stepping*.14)*(1-air*.34),0,0,7);c.fill();c.globalAlpha=1;
  if(action>0){glow(c,x+dx*20,y-30,45,classes[id].color,.25)}
- c.translate(x,y-lift);c.rotate((action>0?Math.sin(action*22)*(f.flip?-.075:.075):heroMotion?Math.sin(walkPhase)*.014:0)+lean);
+ c.translate(x,y-lift);c.rotate(lean);
  if(!(p&&id===chosen&&(drawDirectionalHero(c,0,0,h,dx,dy)||(heroMotion?drawGait(c,0,0,h,f.flip):drawDress(c,0,bob,h,f.flip)))))drawSprite(c,heroArt,heroFrames[f.row*4+id],action>0?dx*Math.sin(action*22)*4:0,bob,h,f.flip);c.restore();
 }
 function drawRoster(){drawArcRoster()}
@@ -83,7 +83,7 @@ function aimAngle(){
  if(best!==null)a+=angleDelta(a,best)*.55;
  return a;
 }
-function attack(){if(mode!=='play'||attackCD>0)return;attackCD=classes[chosen].rate/(speedMult*(1+(gearStats().haste+attrHaste())/100));p.action=.26;const a=aimAngle()+rnd(-1,1)*aimSpread();p.dx=Math.cos(a);p.dy=Math.sin(a);const cl=classes[chosen];if(chosen===4){monkStrike(a);emitSkillVisual({type:4,branch:0,rank:1,x:p.x,y:p.y,dx:p.dx,dy:p.dy,melee:true});return}
+function attack(){if(mode!=='play'||attackCD>0)return;attackCD=classes[chosen].rate/(speedMult*(1+(gearStats().haste+attrHaste())/100));p.action=.26;const a=aimAngle()+rnd(-1,1)*aimSpread();p.dx=Math.cos(a);p.dy=Math.sin(a);const cl=classes[chosen];beginActorGesture(p,chosen===4||chosen===5?'strike':'cast',a,.3);if(chosen===4){monkStrike(a);emitSkillVisual({type:4,branch:0,rank:1,x:p.x,y:p.y,dx:p.dx,dy:p.dy,melee:true});return}
  if(chosen===5){angelStrike(a);emitSkillVisual({type:5,branch:0,rank:1,x:p.x,y:p.y,dx:p.dx,dy:p.dy,melee:true});return}fire(p.x,p.y,a,cl.damage*gearPower(),chosen===1?390:480,cl.color,chosen===2?2+(weaponWithEffect('cleave')?2:0):0);if(chosen===2&&weaponWithEffect('cleave')?.rarity==='legendary'){for(const side of [-1,1])fire(p.x,p.y,a+side*.16,cl.damage*.55*gearPower(),480,cl.color,1)}if(chosen===0){fire(p.x,p.y,a-.14,cl.damage*.45*gearPower(),450,cl.color);fire(p.x,p.y,a+.14,cl.damage*.45*gearPower(),450,cl.color)}ring(p.x+Math.cos(a)*20,p.y+Math.sin(a)*20,cl.color,20,.15);playSfx('attack',p.x,chosen)}
 function hit(f,d,element=playerElement()){if(f.hp<=0)return;d=buildDamage(f,adjustedDamage(f,d,element));angelStrikeLanded();f.hp-=d;f.hit=.12;f.recoil=.16;impactFreeze=.015;playSfx('impact',f.x,f.type);sparks(f.x,f.y,f.color,5,80);num(f.x+rnd(-8,8),f.y-65,Math.round(d));if(f.hp<=0){corpses.push({...f,fade:16,deathAge:0,facing:f.facing??Math.atan2(p.y-f.y,p.x-f.x)});scorches.push({x:f.x,y:f.y,r:f.r*1.4,life:24,color:'#130b08'});sparks(f.x,f.y,f.color,15,130);kills++;enemyDeath(f);if(f.type!==3&&Math.random()<(f.elite?.5:.16))equipmentDrop(f.x,f.y);collectExperience(campaignExperience(f));ring(f.x,f.y,f.color,40);if(Math.random()<.14)drops.push({x:f.x,y:f.y,type:'heal',life:25});if(Math.random()<.12)drops.push({x:f.x+12,y:f.y,type:'mana',life:25});if(f.type===3){for(let i=0;i<3;i++)drops.push({x:f.x+(i-1)*34,y:f.y+12,type:'potion',life:180})}else if(Math.random()<(f.elite?.24:.05))drops.push({x:f.x-14,y:f.y,type:'potion',life:45});if(f.type===3){campaignBossDefeated(f);return}tone(110,.12,'triangle',.015)}}
 function skill(target=null){castExpansion(target)}
@@ -167,6 +167,7 @@ function update(dt){
   }
   for(const other of foes){if(other===f||other.hp<=0||other.asleep)continue;const dd=dist(f,other);if(dd>0&&dd<f.r+other.r){f.x+=(f.x-other.x)/dd*13*dt;f.y+=(f.y-other.y)/dd*13*dt}}
  }
+ for(const actor of foes)if(actor.hp>0)advanceActorPresentation(actor,dt,enemyMotionProfile(actor));
  for(const sh of shots){sh.life-=dt;sh.trail??=[];sh.trail.unshift({x:sh.x,y:sh.y});if(sh.trail.length>7)sh.trail.pop();sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;
   if(sh.enemy){if(dist(sh,p)<17){hurt(sh.damage,sh.ailment);addVFX(sh.element||0,sh.x,sh.y,58,.5);sh.life=0}}
   else{for(const f of foes){if(f.hp<=0||sh.hit.has(f)||sh.life<=0)continue;if(dist(sh,f)<f.r+8){hit(f,sh.damage*(sh.shatter&&f.frozen>0?1.5:1),sh.element);projectileVariation(sh,f);addVFX(sh.element,f.x,f.y,sh.large?100:60,.5);if(sh.element===0)f.burn=1.4;sh.hit.add(f);onProjectileGearHit(sh,f);sh.pierce--;if(sh.pierce<0)sh.life=0}}
