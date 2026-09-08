@@ -15,7 +15,13 @@ const EXPLORE_WORLD={w:12800,h:8600};
 // wakes both at once and the screen fills with enemies, which is exactly what the
 // first build did.
 const WAKE_RADIUS=420,SLEEP_RADIUS=1500,SEAL_RADIUS=70,FOG_CELL=180;
-const MAX_AWAKE=14,WAKE_INTERVAL=.28,WAKE_PER_TICK=2;
+const WAKE_INTERVAL=.28,WAKE_PER_TICK=2;
+// How many may be awake at once. This was briefly scaled by depth after an
+// automated playtest died on map one, but that playtest had no footwork: it
+// stood still and held the attack. Difficulty is Leonard's call, not a
+// measurement of how badly a script plays, so the ceiling is flat again.
+const MAX_AWAKE=14;
+function maxAwake(){return MAX_AWAKE}
 let wakeTimer=0;
 let zones=[],mapSeals=[],exploredCells=new Set(),bossGate=null,exploring=false,sealsBroken=0;
 
@@ -123,7 +129,7 @@ function updateExploration(dt){
  wakeTimer-=dt;
  if(wakeTimer<=0){
   wakeTimer=WAKE_INTERVAL;
-  let budget=Math.min(WAKE_PER_TICK,MAX_AWAKE-awake);
+  let budget=Math.min(WAKE_PER_TICK,maxAwake()-awake);
   if(budget>0){
    // nearest first, so a zone reveals itself from the edge you walked in through
    const candidates=foes.filter(f=>f.asleep&&f.hp>0&&dist(f,p)<WAKE_RADIUS).sort((a,b)=>dist(a,p)-dist(b,p));
@@ -163,8 +169,8 @@ function exploreBossCheck(){
 }
 function spawnExploreBoss(){
  const m=mapSpec(),kit=bossKit(routeStage);
- const hp=1635*Math.pow(1.41,routeStage)*kit.hp*difficulty().hp*rnd(.94,1.08);
- const speed=(58+routeStage*4)*kit.pace*difficulty().speed;
+ const hp=1635*Math.pow(1.41,routeStage)*kit.hp*difficulty().hp*tierSpec().hp*rnd(.94,1.08);
+ const speed=(58+routeStage*4)*kit.pace*difficulty().speed*tierSpec().speed;
  // keep the campaign's wave bookkeeping in step: reaching the boss is wave 3.
  bossSpawned=true;bossGate=null;wave=routeStage*3+3;waveSpawn=0;
  foes.push({x:world.w*.5,y:playBounds().y0+200,type:3,campaign:true,mapId:routeStage,name:m.boss,hp,maxhp:hp,r:kit.r,speed,baseSpeed:speed,attack:1.2,phase:0,bossPhase:0,serial:++spawnSerial,action:0,state:'seek',stateT:0,walk:0,scale:kit.scale,burn:0,burnTick:0,frozen:0,guardUp:kit.traits.includes('shielded')?1:0,hit:0,bob:kit.traits.includes('float')?1.8:.8,gait:kit.pace});

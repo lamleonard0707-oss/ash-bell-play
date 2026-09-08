@@ -6,7 +6,8 @@
 // browser can play that we draw them normally, and the mp4 + screen blend stays as
 // the fallback for players whose browser cannot.
 const selectionVideos=[];
-const alphaSources=[{},{},{},{},{}],plainSources=[{},{},{},{},{}];
+const CLIP_COUNT=6;
+const alphaSources=Array.from({length:CLIP_COUNT},()=>({})),plainSources=Array.from({length:CLIP_COUNT},()=>({}));
 let cinematicIndex=-1,cinematicAlpha=false;
 function supportsAlphaVideo(){
  try{const probe=document.createElement('video');
@@ -32,10 +33,8 @@ function paintSelectionVideo(c,i,height){
 }
 function initCinematics(){
  cinematicAlpha=supportsAlphaVideo();
- const [a0,a1,a2,a3,a4]=alphaSources,[p0,p1,p2,p3,p4]=plainSources;
- a0.src='cinematics/hero-0.webm';a1.src='cinematics/hero-1.webm';a2.src='cinematics/hero-2.webm';a3.src='cinematics/hero-3.webm';a4.src='cinematics/hero-4.webm';
- p0.src='cinematics/hero-0.mp4';p1.src='cinematics/hero-1.mp4';p2.src='cinematics/hero-2.mp4';p3.src='cinematics/hero-3.mp4';p4.src='cinematics/hero-4.mp4';
- for(let i=0;i<5;i++){
+ for(let i=0;i<CLIP_COUNT;i++){alphaSources[i].src='cinematics/hero-'+i+'.webm';plainSources[i].src='cinematics/hero-'+i+'.mp4'}
+ for(let i=0;i<CLIP_COUNT;i++){
   const v=document.createElement('video');
   v.muted=true;v.playsInline=true;v.loop=true;v.preload='metadata';v.setAttribute?.('playsinline','');
   v.addEventListener?.('error',()=>{

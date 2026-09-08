@@ -81,13 +81,32 @@ function migrateCampaignSave(input){
   // the attribute and upgrade points its level has already earned.
   s.progression=progressionMigrate(s);
  }
+ if(s.version===4){
+  if(s===input)s=JSON.parse(JSON.stringify(input));
+  s.version=5;s.runTier=0;s.tiersCleared=[false,false,false];
+  // The experience curve changed shape with the level-50 cap, so banked progress
+  // toward the next level is meaningless. The level itself is kept.
+  s.xp=0;
+ }
  return s;
 }
 // BUG-009 companion: only pre-0.9 saves get a one-time floor, two levels below the
 // map's recommendation, so a stranded old save is playable without gifting levels.
-function applyLegacyLevelFloor(){const floor=Math.max(1,mapSpec().lv-2);while(level<floor)collectExperience(experienceRequired(level)-xp)}
-function campaignXPBudget(id){const start=mapSpec(id).lv,end=id===campaignMaps.length-1?LEVEL_CAP:mapSpec(id+1).lv;let total=0;for(let lv=start;lv<end;lv++)total+=experienceRequired(lv);return total;}
-function campaignExperience(f){const id=f.mapId??routeStage,budget=campaignXPBudget(id);return f.type===3?budget*.26:budget*.74/(34+id*6)*(f.elite?1.8:1)*rnd(.85,1.18);}
+function applyLegacyLevelFloor(){const floor=Math.max(1,monsterLevel()-2);while(level<floor)collectExperience(experienceRequired(level)-xp)}
+// A map is worth the experience it takes to cross its own level band, which now
+// moves with the tier because the monsters do.
+function campaignXPBudget(id){
+ const start=monsterLevel(id);
+ const end=Math.min(LEVEL_CAP,id===campaignMaps.length-1?start+3:monsterLevel(id+1));
+ let total=0;for(let lv=start;lv<Math.max(start+1,end);lv++)total+=experienceRequired(lv);return total;
+}
+// Diablo II pays almost nothing for a monster far beneath you. That is what stops
+// the first tier at about level thirty-four instead of needing an artificial gate.
+function campaignExperience(f){
+ const id=f.mapId??routeStage,budget=campaignXPBudget(id);
+ const raw=f.type===3?budget*.26:budget*.74/(34+id*6)*(f.elite?1.8:1)*rnd(.85,1.18);
+ return raw*experiencePenalty(level,monsterLevel(id));
+}
 function campaignRelic(id){const m=mapSpec(id),item=createEquipment(m.slot,true);item.name=m.relic;item.relicMap=id;item.rarity='legendary';item.effect=m.effect;item.power=['weapon','offhand'].includes(m.slot)?Math.round(rnd(18,26)+id*4):0;
  item.stats={damage:Math.round(rnd(3,6))+id*2,hp:Math.round(rnd(8,14))+id*5,...(id===4?{speed:15}:id===7?{regen:3}:id===8?{haste:15}:id===9?{haste:10,speed:10}:id===10?{damage:12}:id===11?{armor:10,regen:4}:{})};
  if(m.effect==='convert'){item.convert=Math.floor(rnd(0,5));item.description=statsText(item.stats)+' · 元素轉換：'+elementNames[item.convert]}
@@ -104,16 +123,30 @@ function campaignBossDefeated(f){
  campaignCleared.push(id);const item=campaignRelic(id);
  if(!awardGear(item))queueReward(item);
  skillPoints+=2;syncSkillLabel();waveSpawn=0;foes=[];shots=[];hazards=[];castFields=[];
- if(id===campaignMaps.length-1){while(level<LEVEL_CAP)collectExperience(experienceRequired(level)-xp);win();}
+ if(id===campaignMaps.length-1){campaignTierCleared();}
  else{pendingChapter=id+1;saveProgress(true);showChapterGate();}
+}
+// Finishing the twelfth map used to shove the character straight to the level cap
+// and end the run. With three tiers it instead unlocks the next one and hands the
+// same character over: level, gear, points and all.
+function campaignTierCleared(){
+ tiersCleared[runTier]=true;runOutcome='won';saveProgress(true);
+ const next=runTier+1;
+ if(next>=tierDefs.length){end(true);return}
+ const spec=tierDefs[next];
+ openModal(tierSpec().name+' 週目 · 完成','鐘聲，再次響起',
+  classes[chosen].name+' · LV.'+level+' · 擊破 '+kills+'。人物、裝備、技能點全部帶落去；'+spec.name+' 嘅怪物等級高 '+spec.offset+' 級。',
+  [['進入 '+spec.name+' 週目',spec.note,()=>{runOutcome=null;enterTier(next)}],
+   ['先整理裝備','稍後喺選角畫面按「繼續遊戲」再入',()=>panelOpen('gear')],
+   ['結束呢局','返回選角畫面',()=>end(true)]]);
 }
 function rollGuardRole(){const w=mapSpec().roles||[.4,.3,.3],r=Math.random();return r<w[0]?0:r<w[0]+w[1]?1:2}
 function campaignSpawn(type){
  const m=mapSpec(),variant=Math.max(0,Math.min(2,type)),angle=rnd(0,Math.PI*2),at={x:p.x+Math.cos(angle)*rnd(300,430),y:p.y+Math.sin(angle)*rnd(300,430)};confine(at);
- const base=95*Math.pow(1.33,routeStage)*rnd(.86,1.2),health=base*[.85,1.65,1][variant]*difficulty().hp;
+ const base=95*Math.pow(1.33,routeStage)*rnd(.86,1.2),health=base*[.85,1.65,1][variant]*difficulty().hp*tierSpec().hp;
  // build variation is per-enemy so a wave never reads as one repeated cut-out
  const build=rnd(.86,1.16),lanky=rnd(.9,1.12);
- const f={...at,type:variant,campaign:true,mapId:routeStage,name:m.enemy+[' · 突擊',' · 重裝',' · 遠射'][variant],hp:health,maxhp:health,r:(variant===1?24:18)*build,speed:(72+routeStage*3-variant*9)*difficulty().speed*rnd(.88,1.14),color:m.color,hit:0,attack:rnd(.8,1.9),phase:rnd(0,6),action:0,state:'emerge',stateT:rnd(.45,.85),walk:rnd(0,6),burn:0,burnTick:0,frozen:0,scale:(variant===1?1.18:1)*build,lanky,gait:rnd(.85,1.2),bob:rnd(.7,1.4)};
+ const f={...at,type:variant,campaign:true,mapId:routeStage,name:m.enemy+[' · 突擊',' · 重裝',' · 遠射'][variant],hp:health,maxhp:health,r:(variant===1?24:18)*build,speed:(72+routeStage*3-variant*9)*difficulty().speed*tierSpec().speed*rnd(.88,1.14),color:m.color,hit:0,attack:rnd(.8,1.9),phase:rnd(0,6),action:0,state:'emerge',stateT:rnd(.45,.85),walk:rnd(0,6),burn:0,burnTick:0,frozen:0,scale:(variant===1?1.18:1)*build,lanky,gait:rnd(.85,1.2),bob:rnd(.7,1.4)};
  modifyEnemy(f);foes.push(f);ring(f.x,f.y,m.color,30,.6);return f;
 }
 function spawnEscort(boss,count){for(let i=0;i<count;i++){const a=i*Math.PI*2/count+rnd(-.3,.3),at={x:boss.x+Math.cos(a)*rnd(120,190),y:boss.y+Math.sin(a)*rnd(85,135)};confine(at);const f=campaignSpawn(rollGuardRole());f.x=at.x;f.y=at.y;f.escortOf=boss.serial;f.stateT=.4;ring(f.x,f.y,'#ffd9a0',34,.5)}playSfx('summon',boss.x)}
@@ -124,7 +157,7 @@ function campaignNextWave(){
  if(pendingChapter>=0||campaignCleared.includes(routeStage))return;
  const local=wave-routeStage*3,m=mapSpec(),kit=bossKit(routeStage);
  if(local>=2){wave=routeStage*3+3;waveSpawn=0;bossSpawned=true;
- const hp=1635*Math.pow(1.41,routeStage)*kit.hp*difficulty().hp*rnd(.94,1.08),speed=(58+routeStage*4)*kit.pace*difficulty().speed;
+ const hp=1635*Math.pow(1.41,routeStage)*kit.hp*difficulty().hp*tierSpec().hp*rnd(.94,1.08),speed=(58+routeStage*4)*kit.pace*difficulty().speed*tierSpec().speed;
  const boss={x:1080,y:470,type:3,campaign:true,mapId:routeStage,name:m.boss,hp,maxhp:hp,r:kit.r,speed,baseSpeed:speed,attack:1.2,phase:0,bossPhase:0,serial:++spawnSerial,action:0,state:'seek',stateT:0,walk:0,scale:kit.scale,burn:0,burnTick:0,frozen:0,guardUp:0,hit:0,bob:kit.traits.includes('float')?1.8:.8,gait:kit.pace};
  if(kit.traits.includes('shielded'))boss.guardUp=1;
  foes.push(boss);if(kit.traits.includes('shielded'))spawnEscort(boss,4);
@@ -206,7 +239,7 @@ function updateBoss(f,dt){
  if(f.state==='charge'){
   const sp=(340+(f.bossPhase||0)*70)*(f.traits.includes('heavy')?.85:1);
   f.x+=Math.cos(f.chargeA)*sp*dt;f.y+=Math.sin(f.chargeA)*sp*dt;f.walk+=dt*12;confine(f);
-  if(d<f.r+26)hurt(10+f.mapId*2);
+  if(d<f.r+26)hurt(10+f.mapId*2,null,{contact:true});
   if(f.stateT<=0){if((f.chargeLeft=(f.chargeLeft||1)-1)>0){f.stateT=rnd(.35,.5);f.chargeA=Math.atan2(p.y-f.y,p.x-f.x);ring(f.x,f.y,mapSpec(f.mapId).color,60,.3)}else{f.state='recover';f.stateT=f.traits.includes('armored')?1.15:.6}}
   return;
  }
@@ -218,13 +251,13 @@ function updateBoss(f,dt){
    if(p.inv>0){toast('閃開咗勾索');ring(p.x,p.y,'#9fe0c8',70,.4)}
    else if(offAngle<.26&&d<reach){
     const pull=Math.min(Math.max(0,d-90),180);p.x-=Math.cos(f.hookA)*pull;p.y-=Math.sin(f.hookA)*pull;confine(p);cancelMouse();
-    hurt(9+f.mapId*2);toast('被勾索拉埋身 · 閃避可以避開');playSfx('hook',p.x)}
+    hurt(9+f.mapId*2,null,{contact:true});toast('被勾索拉埋身 · 閃避可以避開');playSfx('hook',p.x)}
   }
   if(f.stateT<=0){f.state='recover';f.stateT=.5}return;
  }
  if(f.state==='execute'){
   if(f.stateT<=0){const reach=f.r+150;
-   if(d<reach&&Math.abs(((Math.atan2(p.y-f.y,p.x-f.x)-f.execA+Math.PI*3)%(Math.PI*2))-Math.PI)<.75)hurt(26+f.mapId*3);
+   if(d<reach&&Math.abs(((Math.atan2(p.y-f.y,p.x-f.x)-f.execA+Math.PI*3)%(Math.PI*2))-Math.PI)<.75)hurt(26+f.mapId*3,null,{contact:true});
    ring(f.x+Math.cos(f.execA)*90,f.y+Math.sin(f.execA)*70,'#ffb08a',160,.4);sparks(f.x,f.y,'#ffb08a',26,190);shake=9;
    f.state='recover';f.stateT=.75}
   return;
@@ -255,10 +288,10 @@ function updateCampaignEnemy(f,dt){
   const at=f.aim||{x:p.x,y:p.y},aim=Math.atan2(at.y-f.y,at.x-f.x),dmg=4*Math.pow(1.3,f.mapId)*rnd(.85,1.2);
   if(f.type===2){for(let i=0;i<(f.mapId>=6?3:1);i++)enemyShot(f.x,f.y,aim+(i-(f.mapId>=6?1:0))*.16,175+f.mapId*8,dmg,f.mapId%4,f.affix)}
   else if(f.type===0){f.state='charge';f.stateT=rnd(.2,.32);f.chargeA=aim}
-  else if(d<85){hurt(dmg+3,f.affix);ring(f.x,f.y,m.color,80,.3)}
+  else if(d<85){hurt(dmg+3,f.affix,{contact:true});ring(f.x,f.y,m.color,80,.3)}
   return;
  }
- if(f.state==='charge'){f.x+=Math.cos(f.chargeA)*330*dt;f.y+=Math.sin(f.chargeA)*330*dt;f.walk+=dt*12;confine(f);if(d<50)hurt(3.4*Math.pow(1.3,f.mapId),f.affix);if(f.stateT<=0){f.state='recover';f.stateT=.7}return;}
+ if(f.state==='charge'){f.x+=Math.cos(f.chargeA)*330*dt;f.y+=Math.sin(f.chargeA)*330*dt;f.walk+=dt*12;confine(f);if(d<50)hurt(3.4*Math.pow(1.3,f.mapId),f.affix,{contact:true});if(f.stateT<=0){f.state='recover';f.stateT=.7}return;}
  if(f.state==='recover'){if(f.stateT<=0)f.state='seek';return;}
  const range=f.type===2?300:f.type===0?150:65;
  if(d>range||f.type===2&&d<170){const sign=f.type===2&&d<170?-1:1,s=f.speed*(f.slow>0?.5:1)*(f.affix==='haste'?1.45:1);f.x+=Math.cos(a)*s*dt*sign;f.y+=Math.sin(a)*s*dt*sign;f.walk+=s*dt*(f.gait||1)/12;confine(f);}

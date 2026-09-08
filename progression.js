@@ -7,7 +7,7 @@
 // from them. That keeps every existing rank check working while giving the D2
 // shape the player asked for.
 const SKILL_LEVEL_CAP=5;
-const skillLevelReq=[1,1,6,12,18,24];              // character level per skill level
+const skillLevelReq=[1,1,10,20,30,40];             // character level per skill level
 const rankForSkillLevel=[0,1,2,3,5,7];             // 5 visible levels -> 7 internal tiers
 const skillNodeIndex=[0,1,2,4,6];                  // which authored node describes each level
 
@@ -93,14 +93,15 @@ function spendUpgrade(b,i){
 }
 function spendAttribute(key){
  if(attrPoints<1||!(key in attrs))return false;
+ const beforeHealth=key==='vit'?attrHealth():0;
  attrs[key]++;attrPoints--;
- if(key==='vit'){const before=p.maxhp;p.maxhp=baseMaxHp()+equipmentHealth()+attrHealth();p.hp+=p.maxhp-before}
+ if(key==='vit'){const gain=attrHealth()-beforeHealth;p.maxhp+=gain;p.hp=Math.min(p.maxhp,p.hp+gain)}
  playSfx('equip',p&&p.x);updateHUD();if(activePanel==='gear')drawInventory();markDirty();return true;
 }
-// The class base plus everything level-ups have added, with gear and attributes
-// layered on top so recomputing never double-counts.
+// Only for display and for the equipment-requirement panel; max health itself is
+// always adjusted by delta, never recomputed, so it cannot drift from the +6 per
+// level that gainSkillLevel applies.
 function baseMaxHp(){return classes[chosen].hp+6*(level-1)}
-function refreshMaxHp(){if(!p)return;const ratio=p.maxhp>0?p.hp/p.maxhp:1;p.maxhp=baseMaxHp()+equipmentHealth()+attrHealth();p.hp=Math.min(p.maxhp,Math.max(1,Math.round(p.maxhp*ratio)))}
 
 function grantLevelPoints(){attrPoints+=ATTR_PER_LEVEL;upgradePoints+=1}
 

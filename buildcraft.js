@@ -18,9 +18,9 @@ const talentDefs=[
  {name:'共生',max:5,req:[0,3,2],text:'每件魔法／傳奇裝備提供 每點 +0.15 靈息每秒。'},
  {name:'三脈合一',max:5,req:[2,2,3],text:'三條路線都學習時，連招護盾另加 每點 4%，冷卻另減 每點 5%。'}
 ];
-const classMarks=['焚鐘印','骨芽印','裂頁印','霜契印','血宴印'];
+const classMarks=['焚鐘印','骨芽印','裂頁印','霜契印','血宴印','墜羽印'];
 function difficulty(){return difficulties[runDifficulty]||difficulties[0]}
-function resetBuildcraft(){runDifficulty=Number($('#difficulty').value)||0;talents=Array(9).fill(0);lastCastBranch=-1;lastCastAt=-99;comboUntil=0;}
+function resetBuildcraft(){runDifficulty=Number($('#difficulty').value)||0;runTier=0;tiersCleared=tiersCleared.map(()=>false);talents=Array(9).fill(0);lastCastBranch=-1;lastCastAt=-99;comboUntil=0;}
 function validBuildSave(s){if(s.runDifficulty!==undefined&&(!Number.isInteger(s.runDifficulty)||s.runDifficulty<0||s.runDifficulty>3))throw Error('難度存檔不正確');if(s.talents!==undefined&&(!Array.isArray(s.talents)||s.talents.length!==9||s.talents.some(v=>!Number.isInteger(v)||v<0||v>5)))throw Error('天賦存檔不正確');}
 function learnTalent(i){const d=talentDefs[i];if(mode!=='panel'||activePanel!=='tree'||!d||skillPoints<1||talents[i]>=d.max||d.req.some((v,j)=>ranks[j]<v))return;talents[i]++;skillPoints--;drawTree();syncSkillLabel();markDirty();}
 function talentGap(d){return d.req.map((v,j)=>v&&ranks[j]<v?skillTrees[chosen][j].name+' 第 '+v+' 階（目前 '+ranks[j]+'）':'').filter(Boolean)}
@@ -42,7 +42,7 @@ function buildManaRegen(){return talents[7]*.15*Object.values(equipped).filter(i
 let cursorPosition=null;
 function cursorAim(){if(!p||!cursorPosition)return undefined;const at=mouseWorld(cursorPosition.x,cursorPosition.y),a=Math.atan2(at.y-p.y,at.x-p.x);return {...at,dx:Math.cos(a),dy:Math.sin(a)}}
 function buildHUD(){if(!p)return;for(let i=0;i<3;i++){const b=$('#quickskill'+i),cd=i===activeSkill?skillCD:skillTimers[i];b.textContent=(i+1)+' · '+skillTrees[chosen][i].name+'\n'+(!ranks[i]?'未學習':cd>0?cd.toFixed(1)+' 秒':'就緒');b.disabled=!ranks[i]||cd>0;b.className=activeSkill===i?'active':'';}$('#difficulty-label').textContent=difficulty().name;}
-function initBuildcraft(){const sel=$('#difficulty');for(let i=0;i<4;i++){const o=document.createElement('option');o.value=i;o.textContent=difficulties[i].name+' · '+difficulties[i].note;sel.append(o)}sel.value='0';for(let i=0;i<3;i++)$('#quickskill'+i).onclick=()=>castLoadout(i);addEventListener('keydown',e=>{if(!e.repeat&&['1','2','3'].includes(e.key)){e.preventDefault();castLoadout(Number(e.key)-1)}});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')cursorPosition={x:e.clientX,y:e.clientY}});canvas.addEventListener('pointerleave',()=>cursorPosition=null);}
+function initBuildcraft(){initTiers();const sel=$('#difficulty');for(let i=0;i<4;i++){const o=document.createElement('option');o.value=i;o.textContent=difficulties[i].name+' · '+difficulties[i].note;sel.append(o)}sel.value='0';for(let i=0;i<3;i++)$('#quickskill'+i).onclick=()=>castLoadout(i);addEventListener('keydown',e=>{if(!e.repeat&&['1','2','3'].includes(e.key)){e.preventDefault();castLoadout(Number(e.key)-1)}});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')cursorPosition={x:e.clientX,y:e.clientY}});canvas.addEventListener('pointerleave',()=>cursorPosition=null);}
 
 const packSize={helmet:[2,2],chest:[2,3],legs:[2,3],amulet:[1,1],ring:[1,1],shoulders:[2,2],knees:[1,2],offhand:[2,3],weapon:[2,4],belt:[2,1]};
 let packSelected=null;
