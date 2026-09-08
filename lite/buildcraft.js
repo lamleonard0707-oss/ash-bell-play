@@ -29,7 +29,7 @@ function drawTalents(){const root=$('#talent-web');root.replaceChildren();
   const d=talentDefs[i],gap=talentGap(d),maxed=talents[i]>=d.max,b=document.createElement('button');
   b.className='talent-node'+(talents[i]?' learned':'')+(gap.length?' locked':'');
   const status=maxed?'已點滿':gap.length?'仲差：'+gap.join('、'):skillPoints<1?'技能點不足':'可以點';
-  b.textContent=(i===3?classMarks[chosen]:d.name)+' '+talents[i]+'/'+d.max+'\n'+d.text+'\n'+status;
+  b.textContent=(i===3?classMarks[chosen]:d.name)+' '+talents[i]+'/'+d.max+'\n'+d.text.replaceAll('靈息',resourceName())+'\n'+status;
   b.title='前置：'+(d.req.map((n,j)=>n?skillTrees[chosen][j].name+' 第 '+n+' 階':'').filter(Boolean).join(' ＋ ')||'無');
   b.disabled=maxed||skillPoints<1||gap.length>0;b.onclick=()=>learnTalent(i);root.append(b);
  }}

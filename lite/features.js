@@ -33,7 +33,7 @@ function dropGear(x,y,slot,legendary=false){if(bag.length>=70)return;const item=
 function awardGear(item){if(bag.length>=70){toast('背包已滿 · 本局最多攜帶 70 件裝備');return false}normalizePack();if(!packPlace(item)){toast('背包空間不足 · 整理格仔後再拾取');return false}bag.push(item);toast('拾取 '+item.name+' · 撳「裝備」查看');playSfx('loot',p?.x);$('#gearbtn').textContent='裝備 · '+bag.length;return true}
 function equipItem(id){changeEquipment(id)}
 function describeItem(item){if(!item)return '尚未裝備';const req=requirementText(item);
- return (item.power?'傷害 +'+item.power+'% · ':'')+item.description+(req?' · '+req+(meetsRequirement(item)?'':' ⚠️ 未達'):'')}
+ return (item.power?'傷害 +'+item.power+'% · ':'')+item.description.replaceAll('靈息',resourceName())+(req?' · '+req+(meetsRequirement(item)?'':' ⚠️ 未達'):'')}
 function drawInventory(){drawArsenal()}
 function resetEquipment(){bag=[];equipped=emptyGear();itemSerial=0;lootSerial=0;dashFields.length=0;$('#gearbtn').hidden=false;$('#gearbtn').textContent='裝備';clearAim()}
 function drawGearDrop(d){drawGroundItem(d)}

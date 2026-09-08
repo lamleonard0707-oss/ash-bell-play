@@ -113,9 +113,11 @@ function buildTile(spec,theme,rand,variant,bands){
  paintTileGround(g,theme,rand);
  if(bw){
   const sw=(base.naturalWidth||base.width),sh=(base.naturalHeight||base.height);
-  const cw=sw*(.62+rand()*.3),ch=sh*(.62+rand()*.3);
-  // and from the lower part of the frame, which is floor in these paintings
-  const sy0=Math.max(0,sh*.42),sy=sy0+rand()*Math.max(0,sh-ch-sy0);
+  // Keep the entire source rectangle within the lower 58% of the painting.
+  // Choosing height against the full image previously overran its bottom.
+  const sy0=sh*.42,available=sh-sy0;
+  const cw=sw*(.62+rand()*.3),ch=available*(.75+rand()*.25);
+  const sy=sy0+rand()*(available-ch);
   // 0.55 measured the same tile-to-tile brightness spread as 0.34 (3.7 vs 3.6 of
   // 255) while keeping far more of the painted texture, so it is not the blend
   // strength that makes tiles read as patches.

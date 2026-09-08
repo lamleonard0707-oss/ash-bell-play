@@ -200,7 +200,7 @@ function drawAttributes(){
   ['vit','生命上限 +'+attrHealth()+'　回復 +'+attrRegenHp().toFixed(1)+'／秒'],
   ['str','傷害 +'+Math.round((attrDamageMult()-1)*100)+'%　減傷 +'+attrArmor().toFixed(1)+'%'],
   ['dex','攻速 +'+attrHaste().toFixed(1)+'%　移速 +'+attrSpeed().toFixed(1)+'%'],
-  ['eng','靈息回復 +'+attrManaRegen().toFixed(2)+'／秒　技能傷害 +'+Math.round((attrSkillMult()-1)*100)+'%']
+  ['eng',resourceName()+'回復 +'+attrManaRegen().toFixed(2)+'／秒　技能傷害 +'+Math.round((attrSkillMult()-1)*100)+'%']
  ];
  for(const [key,detail] of rows){
   const def=attrDefs.find(a=>a.key===key),row=document.createElement('div');row.className='attr-row';
