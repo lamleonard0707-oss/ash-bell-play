@@ -34,12 +34,12 @@ function paintSelectionVideo(c,i,height){
 function initCinematics(){
  cinematicAlpha=supportsAlphaVideo();
  // Literal asset paths let both offline exporters embed every clip.
- alphaSources[0].src='cinematics/hero-0.webm';plainSources[0].src='cinematics/hero-0.mp4';
- alphaSources[1].src='cinematics/hero-1.webm';plainSources[1].src='cinematics/hero-1.mp4';
- alphaSources[2].src='cinematics/hero-2.webm';plainSources[2].src='cinematics/hero-2.mp4';
- alphaSources[3].src='cinematics/hero-3.webm';plainSources[3].src='cinematics/hero-3.mp4';
- alphaSources[4].src='cinematics/hero-4.webm';plainSources[4].src='cinematics/hero-4.mp4';
- alphaSources[5].src='cinematics/hero-5.webm';plainSources[5].src='cinematics/hero-5.mp4';
+ alphaSources[0].src='cinematics/hero-0-colour-v2.webm';plainSources[0].src='cinematics/hero-0.mp4';
+ alphaSources[1].src='cinematics/hero-1-colour-v2.webm';plainSources[1].src='cinematics/hero-1.mp4';
+ alphaSources[2].src='cinematics/hero-2-colour-v2.webm';plainSources[2].src='cinematics/hero-2.mp4';
+ alphaSources[3].src='cinematics/hero-3-colour-v2.webm';plainSources[3].src='cinematics/hero-3.mp4';
+ alphaSources[4].src='cinematics/hero-4-colour-v2.webm';plainSources[4].src='cinematics/hero-4.mp4';
+ alphaSources[5].src='cinematics/hero-5-colour-v2.webm';plainSources[5].src='cinematics/hero-5.mp4';
  for(let i=0;i<CLIP_COUNT;i++){
   const v=document.createElement('video');
   v.muted=true;v.playsInline=true;v.loop=true;v.preload='metadata';v.setAttribute?.('playsinline','');
