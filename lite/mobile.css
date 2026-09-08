@@ -80,3 +80,10 @@
  .vitals{left:calc(50% - 36px);width:210px;gap:5px}.level{width:104px}.orb{width:43px;height:43px}
  .quest{width:145px}.quest>span{font-size:8px}
 }
+
+/* Fullscreen entry remains available while the portrait prompt covers the HUD. */
+#rotate-fullscreen{min-height:44px;padding:10px 24px;margin-top:18px;background:#624825;border:1px solid #bd9c65;color:#f1dcb8;font:16px system-ui}
+#rotate-fullscreen-help:empty{display:none}
+#rotate-device #rotate-fullscreen-help{font-size:13px;max-width:30em}
+#fullscreenbtn{white-space:nowrap}
+@media (orientation:landscape) and (max-height:600px) and (max-width:620px){.topright{gap:3px}.topright button{padding:5px 7px;font-size:10px}}

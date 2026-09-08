@@ -46,6 +46,44 @@ function aimPosition(){if(!p)return null;const range=Math.max(70,Math.min(240,ai
 function drawAim(){if(aim.id===null||!p)return;const target=aim.moved?aimPosition():{x:p.x,y:p.y},col=aim.cancel?'#c26856':classes[chosen].color;ctx.save();ctx.strokeStyle=col;ctx.globalAlpha=.72;ctx.lineWidth=1.5;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.setLineDash([]);groundRing(target.x,target.y,chosen===2?42:85,col,.65,2);ctx.beginPath();ctx.moveTo(target.x-11,target.y);ctx.lineTo(target.x+11,target.y);ctx.moveTo(target.x,target.y-7);ctx.lineTo(target.x,target.y+7);ctx.stroke();ctx.restore()}
 function panelOpen(kind){cancelMouse();if(mode==='layout')return;if(mode!=='panel')panelReturn=mode;mode='panel';activePanel=kind;attackHeld=false;keys={};joy.x=joy.y=0;clearAim();$('#stick').style.transform='';$('#panel').hidden=false;$('#gearview').hidden=kind!=='gear';$('#settingsview').hidden=kind!=='settings';$('#treeview').hidden=kind!=='tree';$('#paneltitle').textContent=kind==='gear'?'行者裝備':kind==='tree'?'職業技能樹':'聲音與手機設定';if(kind==='gear')drawInventory();else if(kind==='tree')drawTree();else syncSettings();$('#panelclose').focus();syncAudio()}
 function panelClose(){if(mode!=='panel')return;$('#panel').hidden=true;mode=panelReturn;activePanel='';keys={};syncAudio();saveProgress(true)}
+// Fullscreen must be requested directly from a player's tap.
+let fullscreenBusy=false;
+function fullscreenElement(){return document.fullscreenElement||document.webkitFullscreenElement}
+function standaloneGame(){return (typeof navigator!=='undefined'&&navigator.standalone===true)||(typeof matchMedia==='function'&&matchMedia('(display-mode: standalone)').matches)}
+function syncFullscreenUI(){
+ const active=!!fullscreenElement(),standalone=standaloneGame();
+ for(const id of ['fullscreenbtn','rotate-fullscreen']){
+  const button=$('#'+id);button.textContent=active?'退出全屏':standalone?'已全屏':'全螢幕';
+  button.disabled=standalone&&!active;button.setAttribute('aria-pressed',String(active||standalone));
+  button.setAttribute('aria-label',active?'退出全螢幕':standalone?'已由主畫面全屏開啟':'進入全螢幕');
+ }
+}
+function explainFullscreen(){
+ const text='瀏覽器未能開啟全螢幕。iPhone：用 Safari 開線上版 → 分享 → 加入主畫面（開啟「以網頁 App 開啟」），再由圖示進入。其他手機：用 Chrome／Edge 正式瀏覽器開啟，再按全螢幕。';
+ $('#fullscreen-help').textContent=text;$('#rotate-fullscreen-help').textContent=text;
+ if(!mobileOrientationBlocked){panelOpen('settings');document.querySelector('.feature-panel').scrollTop=0}
+}
+async function toggleGameFullscreen(){
+ if(fullscreenBusy||(standaloneGame()&&!fullscreenElement()))return;
+ fullscreenBusy=true;
+ try{
+  if(fullscreenElement()){
+   const exit=document.exitFullscreen||document.webkitExitFullscreen;
+   if(!exit)throw Error('fullscreen exit unavailable');
+   await exit.call(document);
+  }else{
+   const root=document.documentElement,request=root.requestFullscreen||root.webkitRequestFullscreen;
+   if(!request)throw Error('fullscreen unavailable');
+   await request.call(root,{navigationUI:'hide'});
+  }
+ }catch{explainFullscreen()}
+ finally{fullscreenBusy=false;syncFullscreenUI()}
+}
+function initFullscreen(){
+ $('#fullscreenbtn').onclick=toggleGameFullscreen;$('#rotate-fullscreen').onclick=toggleGameFullscreen;
+ for(const event of ['fullscreenchange','webkitfullscreenchange'])document.addEventListener(event,()=>{syncFullscreenUI();resize()});
+ syncFullscreenUI();
+}
 // Portrait is a paused presentation state, independent of panel/play modes.
 const mobilePortraitQuery='(orientation: portrait) and (max-width: 900px) and (any-pointer: coarse), (orientation: portrait) and (max-width: 600px)';
 let mobileOrientationBlocked=false;
@@ -121,6 +159,7 @@ function audioTick(dt){if(!soundscape)return;syncAudio();if(mode!=='play'||!pref
  if(t>=a.nextMusic){const boss=!!bossSpawned,notes=boss?[55,58.27,65.41,49]:[55,73.42,65.41,82.41,55,49];a.nextMusic=t+(boss?1.2:3.2);const n=notes[(a.beat++)%notes.length];synth(n,boss?1.5:4.5,.045,'sine',null,0,null,true);synth(n*2.002,3,.018,'sine',null,.18,null,true);if(boss)synth(42,.18,.07,'sine',null,0,28,true)}
 }
 function initFeatures(){
+ initFullscreen();
  syncMobileOrientation();addEventListener('resize',syncMobileOrientation);
  addEventListener('keydown',e=>{if(mobileOrientationBlocked){e.preventDefault();e.stopImmediatePropagation()}},true);
  muted=!preferences.sound;$('#sound').textContent='音效 '+(preferences.sound?'ON':'OFF');document.body.classList.toggle('low-quality',preferences.quality==='smooth');applyControls();
