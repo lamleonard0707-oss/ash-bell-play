@@ -103,15 +103,26 @@ function baseArt(id){const art=mapSpec(id).art??id;return art<3?[bg,frostFloor,b
 // of painted tiles laid out from the run seed, with flips and per-cell tinting so
 // the repeat is not obvious. Only the tiles the camera can see are drawn.
 const TILE_W=1600,TILE_H=1080,TILE_VARIANTS=6;
-function buildTile(spec,theme,rand,variant){
+function buildTile(spec,theme,rand,variant,bands){
  const c=document.createElement('canvas');c.width=TILE_W;c.height=TILE_H;const g=c.getContext('2d');
  const base=baseArt(spec.id),bw=base&&(base.naturalWidth||base.width);
+ // The ground is always a plain painted floor first. The scene art on top is
+ // texture, not content: at full strength its walls, stairs and altars read as
+ // real objects, and because each tile crops a different part of the painting
+ // they ended up sliced in half at every tile edge (PT-02).
+ paintTileGround(g,theme,rand);
  if(bw){
-  // take a different crop of the source per variant so the tiles are not clones
   const sw=(base.naturalWidth||base.width),sh=(base.naturalHeight||base.height);
   const cw=sw*(.62+rand()*.3),ch=sh*(.62+rand()*.3);
-  g.drawImage(base,rand()*(sw-cw),rand()*(sh-ch),cw,ch,0,0,TILE_W,TILE_H);
- }else paintTileGround(g,theme,rand);
+  // and from the lower part of the frame, which is floor in these paintings
+  const sy0=Math.max(0,sh*.42),sy=sy0+rand()*Math.max(0,sh-ch-sy0);
+  // 0.55 measured the same tile-to-tile brightness spread as 0.34 (3.7 vs 3.6 of
+  // 255) while keeping far more of the painted texture, so it is not the blend
+  // strength that makes tiles read as patches.
+  g.save();g.globalAlpha=.55;
+  g.drawImage(base,rand()*(sw-cw),sy,cw,ch,0,0,TILE_W,TILE_H);
+  g.restore();
+ }
  if(spec.grade){
   g.globalCompositeOperation='multiply';g.globalAlpha=.66;g.fillStyle=spec.grade;g.fillRect(0,0,TILE_W,TILE_H);
   g.globalCompositeOperation='overlay';g.globalAlpha=.34;g.fillStyle=theme.ground[1];g.fillRect(0,0,TILE_W,TILE_H);
@@ -125,6 +136,7 @@ function buildTile(spec,theme,rand,variant){
   for(let i=0;i<n;i++)paintScatterAt(g,kind,theme,rand,rand()*TILE_W,rand()*TILE_H);
  }
  g.restore();
+ sealTileEdges(g,bands);
  return c;
 }
 function paintTileGround(g,theme,rand){
@@ -138,12 +150,57 @@ function paintTileGround(g,theme,rand){
  for(let i=0;i<1400;i++)g.fillRect(rand()*TILE_W,rand()*TILE_H,1+rand()*2,1+rand());
  g.globalAlpha=1;
 }
+const EDGE_BAND=210;
+function buildEdgeBands(theme,rand){
+ // One patch of plain themed ground, mirrored so it reads the same from either
+ // side, then feathered to nothing over EDGE_BAND pixels.
+ const make=(w,h,vertical)=>{
+  const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+  const half=document.createElement('canvas');
+  half.width=vertical?w:Math.ceil(w/2);half.height=vertical?Math.ceil(h/2):h;
+  const hg=half.getContext('2d');
+  const grad=hg.createLinearGradient(0,0,half.width,half.height);
+  grad.addColorStop(0,theme.ground[0]);grad.addColorStop(1,theme.ground[1]);
+  hg.fillStyle=grad;hg.fillRect(0,0,half.width,half.height);
+  for(let i=0;i<90;i++){const x=rand()*half.width,y=rand()*half.height,r=60+rand()*180;
+   hg.globalAlpha=.05+rand()*.07;hg.fillStyle=rand()<.5?theme.ground[0]:theme.ground[1];
+   hg.beginPath();hg.ellipse(x,y,r,r*.62,rand()*3,0,7);hg.fill()}
+  hg.globalAlpha=.05;hg.fillStyle=theme.accent;
+  for(let i=0;i<700;i++)hg.fillRect(rand()*half.width,rand()*half.height,1+rand()*2,1+rand());
+  hg.globalAlpha=1;
+  g.drawImage(half,0,0);
+  g.save();
+  if(vertical){g.translate(0,h);g.scale(1,-1)}else{g.translate(w,0);g.scale(-1,1)}
+  g.drawImage(half,0,0);g.restore();
+  // feather: opaque at the outer edge, gone EDGE_BAND pixels in
+  const f=g.createLinearGradient(vertical?w:0,vertical?0:h,0,0);
+  g.globalCompositeOperation='destination-in';
+  f.addColorStop(0,'rgba(0,0,0,0)');f.addColorStop(1,'rgba(0,0,0,1)');
+  g.fillStyle=f;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';
+  return c;
+ };
+ // horizontal band sits along the top/bottom; vertical band along left/right
+ return {h:make(TILE_W,EDGE_BAND,false),v:make(EDGE_BAND,TILE_H,true)};
+}
+function sealTileEdges(g,bands){
+ if(!bands)return;
+ g.save();
+ g.drawImage(bands.h,0,0);                                        // top
+ g.translate(0,TILE_H);g.scale(1,-1);g.drawImage(bands.h,0,0);    // bottom
+ g.restore();g.save();
+ g.drawImage(bands.v,0,0);                                        // left
+ g.translate(TILE_W,0);g.scale(-1,1);g.drawImage(bands.v,0,0);    // right
+ g.restore();
+}
 function buildTerrain(id){
  const spec={...mapSpec(id),id},theme=terrainThemes[spec.theme]||terrainThemes.sanctum;
  const rand=makeRng((runSeed>>>0)^((id+1)*2654435761));
- const tiles=[];for(let v=0;v<TILE_VARIANTS;v++)tiles.push(buildTile(spec,theme,rand,v));
+ const bands=buildEdgeBands(theme,rand);
+ const tiles=[];for(let v=0;v<TILE_VARIANTS;v++)tiles.push(buildTile(spec,theme,rand,v,bands));
  const cols=Math.ceil(WW()/TILE_W),rows=Math.ceil(WH()/TILE_H),layout=[];
- for(let i=0;i<cols*rows;i++)layout.push({v:Math.floor(rand()*TILE_VARIANTS),fx:rand()<.5,fy:rand()<.5});
+ // fy is gone: a vertical flip stands the architecture in the source art on its
+ // head. Horizontal flip is safe because the shared edge band is symmetric.
+ for(let i=0;i<cols*rows;i++)layout.push({v:Math.floor(rand()*TILE_VARIANTS),fx:rand()<.5,fy:false});
  return {tiles,layout,cols,rows,theme,objects:buildObjects(theme,rand,spec.theme)};
 }
 // Draw only the tiles the camera overlaps.

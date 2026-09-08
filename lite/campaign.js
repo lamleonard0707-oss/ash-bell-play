@@ -52,6 +52,8 @@ const expeditionFloorArt=new Image(),humanArt=new Image(),relicArt=new Image();
 const expeditionFloors=[],humanFrames=[],relicFrames=[];
 let campaignCleared=[],pendingRewards=[];
 function mapSpec(id=routeStage){return campaignMaps[id]||campaignMaps[0]}
+// One writer for the header, so nothing can silently overwrite it again.
+function campaignHeading(){return tierSpec().name+'週目 · '+mapSpec().act+' '+(routeStage%3+1)+'/3 · 全戰役 '+(routeStage+1)+'/'+MAP_COUNT}
 function bossKit(id){return bossKits[id]||bossKits[0]}
 function resetCampaign(){runSeed=(Math.random()*4294967296)>>>0;terrainCache.clear();resetExplore();campaignCleared=[];pendingRewards=[];skillVisuals.length=0;$('#bossbar b').textContent=mapSpec().boss;
  // Exploration replaces the wave timer: the garrison is placed up front.
@@ -330,7 +332,7 @@ function initCampaign(){
  // The sanctuary three keep their authored ground art; the expedition maps that
  // used to enlarge 512px tiles are painted procedurally instead.
  chapterBackground=()=>routeStage<3?[bg,frostFloor,bellFloor][routeStage]:terrainFor(routeStage).canvas;
- const oldJourney=journeyHUD;journeyHUD=()=>{oldJourney();if(!p)return;ui.chapter.textContent=mapSpec().act+' · '+(routeStage%3+1)+' / 3';$('#regionlabel').textContent=mapSpec().name;$('#xpdetail').textContent=level>=LEVEL_CAP?'最高等級 · LV.'+LEVEL_CAP:'EXP '+Math.floor(xp)+' / '+xpNeed;$('#routehint').textContent=pendingChapter>=0?'本圖完成 · 按下方「前往下一圖」':p.curse>0?'詛咒 · 回復減半':p.shield>0?'護盾 '+Math.ceil(p.shield):'';const go=$('#nextmap');go.hidden=pendingChapter<0;};
+ const oldJourney=journeyHUD;journeyHUD=()=>{oldJourney();if(!p)return;ui.chapter.textContent=campaignHeading();$('#regionlabel').textContent=mapSpec().name;$('#xpdetail').textContent=level>=LEVEL_CAP?'最高等級 · LV.'+LEVEL_CAP:'EXP '+Math.floor(xp)+' / '+xpNeed;$('#routehint').textContent=pendingChapter>=0?'本圖完成 · 按下方「前往下一圖」':p.curse>0?'詛咒 · 回復減半':p.shield>0?'護盾 '+Math.ceil(p.shield):'';const go=$('#nextmap');go.hidden=pendingChapter<0;};
  $('#nextmap').onclick=()=>{if(pendingChapter>=0)showChapterGate()};
  const originalProps=initProps;
  // Exploration maps are far too large for the authored sanctuary prop layout.

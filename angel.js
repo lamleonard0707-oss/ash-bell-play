@@ -78,6 +78,10 @@ function buildAngelLogos(){
 function drawAngelLogoInto(c,i){const s=angelLogoCanvas.width/3;c.drawImage(angelLogoCanvas,(i%3)*s,Math.floor(i/3)*s,s,s,0,0,80,80)}
 
 // --- altitude -----------------------------------------------------------------
+// What this class calls the blue orb and the dash key. Everything that writes
+// player-facing text asks these instead of hard-coding 靈息 / 閃避.
+function resourceName(){return chosen===5?'羽翼':'靈息'}
+function dashLabel(){return chosen===5?(angelFlying?'降落':'起飛'):'閃避'}
 function angelAltitude(){return (p&&p.altitude)||0}
 function angelAirborne(){return chosen===5&&angelAltitude()>AIRBORNE}
 function angelToggleFlight(){

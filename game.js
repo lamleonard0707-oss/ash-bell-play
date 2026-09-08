@@ -113,7 +113,7 @@ function resume(){mode='play';$('#modal').hidden=true;keys={}}function upgrade()
 function abandonRun(){try{const raw=localStorage.getItem(SAVE_KEY);if(raw)localStorage.setItem(SAVE_KEY+'-abandoned-backup',raw)}catch{}reset()}
 function confirmAbandon(){const s=readSaved();if(!s){abandonRun();return}openModal('確認放棄進度','由第一圖重新開始','呢個唔係重打本關：等級、裝備、技能點會全部清零，由第 1 圖 LV.1 重新開始。舊進度會另存一份備份，但自動存檔槽會被新一局覆蓋。',[['返回最後檢查點',classes[s.chosen].name+' · LV.'+s.level+' · '+chapters[s.routeStage].name,()=>restoreProgress(readSaved())],['確定放棄，重新開始','清零由第 1 圖再嚟過',abandonRun],['取消','返回上一頁',()=>{if(runOutcome==='dead')end(false);else togglePause()}]])}
 function resumeCheckpoint(){const s=readSaved();if(!s){toast('冇可用嘅檢查點 · 請用「匯入存檔」');return}restoreProgress(s)}
-function end(won){runOutcome=won?'won':'dead';if(won)saveProgress(true);updateHUD();const m=Math.floor(elapsed/60),s=Math.floor(elapsed%60).toString().padStart(2,'0'),saved=readSaved();const buttons=[];if(!won&&saved)buttons.push(['返回最後檢查點',classes[saved.chosen].name+' · LV.'+saved.level+' · '+chapters[saved.routeStage].name,resumeCheckpoint]);buttons.push(['查看本局裝備','檢視拾獲的武器與護符',()=>panelOpen('gear')],['放棄進度 · 由第一圖重來','⚠️ 等級、裝備、技能點全部清零',confirmAbandon],['選擇另一位行者','體驗另一種原創戰鬥方式',()=>{$('#modal').hidden=true;$('#hud').hidden=true;$('#select').hidden=false;mode='select';$('#gearbtn').hidden=true;$('#treebtn').hidden=true;foes=[];shots=[];hazards=[];p=null}]);openModal(won?'遠征 · 完成':'行者倒下了',won?'鐘聲，再次響起':'灰燼尚未熄滅',`${classes[chosen].name} · ${m}:${s} · 擊破 ${kills} · LV. ${level}`,buttons)}function win(){end(true)}
+function end(won){runOutcome=won?'won':'dead';if(won)saveProgress(true);updateHUD();const m=Math.floor(elapsed/60),s=Math.floor(elapsed%60).toString().padStart(2,'0'),saved=readSaved();const buttons=[];if(!won&&saved)buttons.push(['返回最後檢查點',classes[saved.chosen].name+' · LV.'+saved.level+' · '+chapters[saved.routeStage].name,resumeCheckpoint]);buttons.push(['查看本局裝備','檢視拾獲的武器與護符',()=>panelOpen('gear')],['放棄進度 · 由第一圖重來','⚠️ 等級、裝備、技能點全部清零',confirmAbandon],['選擇另一位行者','體驗另一種原創戰鬥方式',showSelectScreen]);openModal(won?'遠征 · 完成':'行者倒下了',won?'鐘聲，再次響起':'灰燼尚未熄滅',`${classes[chosen].name} · ${m}:${s} · 擊破 ${kills} · LV. ${level}`,buttons)}function win(){end(true)}
 function togglePause(){if(mode==='play')openModal('聖所靜止','暫停','呼吸一下，異物會等你。',[['繼續戰鬥','返回聖所',resume],['儲存進度','保存目前檢查點',()=>saveProgress(false)],['放棄進度 · 由第一圖重來','⚠️ 唔係重打本關：等級、裝備全部清零',confirmAbandon]]);else if(mode==='modal'&&$('#modaltitle').textContent==='暫停')resume()}
 $('#pause').onclick=togglePause;$('#sound').onclick=()=>{setSound(!preferences.sound);tone(440,.1)};
 for(const [id,fn]of [['dash',dash],['potion',potion]])$('#'+id).addEventListener('pointerdown',e=>{e.preventDefault();fn()});$('#attack').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);attackHeld=true;attack()});for(const evt of ['pointerup','pointercancel','lostpointercapture'])$('#attack').addEventListener(evt,()=>attackHeld=false);
@@ -125,7 +125,12 @@ function updateHUD(){if(!p)return;
  ui.timer.textContent=`${Math.floor(elapsed/60).toString().padStart(2,'0')}:${Math.floor(elapsed%60).toString().padStart(2,'0')} · 擊破 ${kills}`;
  ui.objective.textContent=bossSpawned?'擊敗 '+mapSpec().boss: `清除守軍 · 第 ${Math.max(1,wave-routeStage*3)} / 2 波 · 剩餘 ${waveSpawn+foes.filter(f=>f.hp>0).length}`;
  ui.progress.style.width=Math.min(100,(routeStage+(campaignCleared.includes(routeStage)?1:0))/9*100)+'%';ui.skill.textContent=skillCD>0?Math.ceil(skillCD):p.mp<manaCost()?'不足':'';
- ui.dash.textContent=dashCD>0?Math.ceil(dashCD):'';ui.potion.textContent='藥水 · '+potions;$('#skill').classList.toggle('ready',skillCD<=0&&p.mp>=manaCost());$('#skillstatus').textContent=skillCD>0?'共鳴冷卻 '+Math.ceil(skillCD)+' 秒':'共鳴就緒 · '+manaCost()+' 靈息';
+ ui.dash.textContent=dashCD>0?Math.ceil(dashCD):'';
+ // The seraph has no dash; the same key takes off and lands, so the button and
+ // the keyboard hint say which one pressing it will do next.
+ {const label=dashLabel(),span=$('#dashlabel'),help=$('#dashhelp');
+  if(span&&span.textContent!==label){span.textContent=label;$('#dash')?.setAttribute?.('aria-label',label)}
+  if(help&&help.textContent!==label)help.textContent=label;}ui.potion.textContent='藥水 · '+potions;$('#skill').classList.toggle('ready',skillCD<=0&&p.mp>=manaCost());$('#skillstatus').textContent=skillCD>0?'共鳴冷卻 '+Math.ceil(skillCD)+' 秒':'共鳴就緒 · '+manaCost()+' '+resourceName();
  const target=nearest();$('#targetbar').hidden=bossSpawned||!target||target.type===3||dist(target,p)>420;if(target){$('#targetname').textContent=target.name;$('#targettype').textContent=target.type===3?'首領':['突擊','重裝','遠射'][target.type]||'';$('#targethp').style.width=Math.max(0,target.hp/target.maxhp*100)+'%';}
  expansionHUD();journeyHUD();monkHUD();angelHUD();exploreHUD();const boss=foes.find(f=>f.type===3);if(boss)$('#bossbar i').style.width=Math.max(0,boss.hp/boss.maxhp*100)+'%';
 }
@@ -180,7 +185,7 @@ function update(dt){
   if(dist(d,p)<95){d.x+=(p.x-d.x)*dt*5;d.y+=(p.y-d.y)*dt*5}
   if(dist(d,p)<22){if(d.type==='potion'){if(potions>=potionCap())continue;potions++;num(p.x,p.y-80,'+1 藥水','#e0a2a2');playSfx('potion',p.x)}
    else if(d.type==='heal'){const amt=18*(p.curse>0?.5:1);p.hp=Math.min(p.maxhp,p.hp+amt);num(p.x,p.y-80,'+'+Math.round(amt)+' 生命','#c5d59b')}
-   else{p.mp=Math.min(100,p.mp+20);num(p.x,p.y-80,'+20 靈息','#a1bfef')}
+   else{p.mp=Math.min(100,p.mp+20);num(p.x,p.y-80,'+20 '+resourceName(),'#a1bfef')}
    d.life=0;tone(600,.08)}}
  foes=foes.filter(f=>f.hp>0);shots=shots.filter(sh=>sh.life>0);hazards=hazards.filter(h=>h.life>0);turrets=turrets.filter(t=>t.life>0);drops=drops.filter(d=>d.life>0);for(let i=burnZones.length-1;i>=0;i--)if(burnZones[i].life<=0)burnZones.splice(i,1);
  if(pendingUpgrade&&mode==='play')upgrade();updateHUD();
