@@ -68,18 +68,50 @@ function retrieveItem(id){
  if(!awardGear(item))return false;
  stash.splice(i,1);drawTown();markDirty();return true;
 }
-// --- 傳送石碑（U019 未開通）----------------------------------------------------
-function waypointMaps(){return campaignCleared.slice().sort((a,b)=>a-b)}
+// --- 傳送石碑（U019）-----------------------------------------------------------
+// 開通到「你行到最遠嗰張圖」為止：打爆邊張就通埋下一張，⛔ 唔會俾你跳關。
+function furthestUnlocked(){return campaignCleared.length?Math.min(MAP_COUNT-1,Math.max(...campaignCleared)+1):0}
+function waypointMaps(){const out=[];for(let i=0;i<=furthestUnlocked();i++)out.push(i);return out}
+function canTravelTo(id){return Number.isInteger(id)&&id>=0&&id<MAP_COUNT&&id<=furthestUnlocked()}
+function travelTo(id){
+ if(!canTravelTo(id)||!p)return false;
+ // 同過板一樣清場，但唔會派過關獎勵：重返舊圖係去攞嘢／補給，唔係再刷一次獎。
+ routeStage=id;pendingChapter=-1;bossSpawned=false;runOutcome=null;
+ foes=[];shots=[];drops=[];hazards=[];turrets=[];castFields=[];wards=[];
+ casts.length=0;burnZones.length=0;dashFields.length=0;corpses.length=0;
+ effects=[];particles.length=0;scorches.length=0;ghosts.length=0;numbers=[];skillVisuals.length=0;
+ wave=id*3+1;waveSpawn=0;rest=2;
+ populateMap(id);
+ p.x=entryPoint().x;p.y=entryPoint().y;p.inv=2;p.chill=0;p.poison=0;
+ $('#bossbar').hidden=true;$('#modal').hidden=true;
+ if(mode==='panel')panelClose();
+ mode='play';cancelMouse();chapterFade=1;
+ toast('傳送 · '+mapSpec(id).name);playSfx('phase',p.x);
+ saveProgress(true);
+ return true;
+}
 // --- 面板 ---------------------------------------------------------------------
 function drawTown(){
  const root=$('#townview');if(!root)return;
  root.replaceChildren();
  const head=document.createElement('p');head.className='panel-note';
  head.textContent=townFocus==='waypoint'
-  ?'傳送石碑仲喺度亮緊 —— 傳送功能未開通，下一輪先接。已通關嘅圖：'+(waypointMaps().length||'仲未有')
+  ?'已開通 '+waypointMaps().length+' / '+MAP_COUNT+' 張圖。傳送過去唔會再派過關獎勵，敵人會重新佈防。'
   :'寶箱跨圖共用：喺呢張圖擺低，第幾張圖嘅城鎮開返都仲喺度。上限 '+TOWN_STASH_CAP+' 件。';
  root.append(head);
- if(townFocus==='waypoint')return;
+ if(townFocus==='waypoint'){
+  const list=document.createElement('div');list.className='waypoint-list';
+  for(const id of waypointMaps()){
+   const m=mapSpec(id),b=document.createElement('button');
+   b.className='waypoint-row'+(id===routeStage?' current':'');
+   b.textContent='第 '+(id+1)+' 圖 · '+m.name+'\n'+m.act+(id===routeStage?'　（你而家喺度）':campaignCleared.includes(id)?'　已通關':'　未通關');
+   b.disabled=id===routeStage;
+   b.onclick=()=>travelTo(id);
+   list.append(b);
+  }
+  root.append(list);
+  return;
+ }
  const columns=document.createElement('div');columns.className='stash-columns';
  for(const [title,list,action,empty] of [
   ['背包 · '+bag.length,bag.filter(i=>!Object.values(equipped).some(e=>e&&e.id===i.id)),stashItem,'背包冇嘢可以擺'],
@@ -142,7 +174,7 @@ function drawTownStructures(){
   ctx.font='12px Georgia';ctx.textAlign='center';ctx.shadowColor='#000';ctx.shadowBlur=5;
   ctx.fillStyle=near?'#f3e2bd':'#b6a68a';
   const label=s.key==='supply'?(supplyReady()?'補給站 · 撳一下攞補給':'補給站 · 呢張圖攞咗喇')
-   :s.key==='stash'?'寶箱 · 撳一下開':'傳送石碑 · 未開通';
+   :s.key==='stash'?'寶箱 · 撳一下開':'傳送石碑 · 撳一下揀圖';
   ctx.fillText(near?label:s.name,s.x,s.y-84);
   ctx.restore();
  }
