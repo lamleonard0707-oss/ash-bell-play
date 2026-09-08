@@ -44,8 +44,27 @@ function onProjectileGearHit(sh,f){const weapon=weaponWithEffect(sh.element===0?
 function clearAim(){aim.id=null;aim.moved=false;aim.cancel=false;$('#aimhint').hidden=true;document.body.classList.remove('aiming')}
 function aimPosition(){if(!p)return null;const range=Math.max(70,Math.min(240,aim.distance*2.2));return {x:p.x+aim.dx*range,y:p.y+aim.dy*range,dx:aim.dx,dy:aim.dy,aimed:true}}
 function drawAim(){if(aim.id===null||!p)return;const target=aim.moved?aimPosition():{x:p.x,y:p.y},col=aim.cancel?'#c26856':classes[chosen].color;ctx.save();ctx.strokeStyle=col;ctx.globalAlpha=.72;ctx.lineWidth=1.5;ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.setLineDash([]);groundRing(target.x,target.y,chosen===2?42:85,col,.65,2);ctx.beginPath();ctx.moveTo(target.x-11,target.y);ctx.lineTo(target.x+11,target.y);ctx.moveTo(target.x,target.y-7);ctx.lineTo(target.x,target.y+7);ctx.stroke();ctx.restore()}
-function panelOpen(kind){cancelMouse();if(mode==='layout')return;if(mode!=='panel')panelReturn=mode;mode='panel';activePanel=kind;attackHeld=false;keys={};joy.x=joy.y=0;clearAim();$('#stick').style.transform='';$('#panel').hidden=false;$('#gearview').hidden=kind!=='gear';$('#settingsview').hidden=kind!=='settings';$('#treeview').hidden=kind!=='tree';$('#paneltitle').textContent=kind==='gear'?'行者裝備':kind==='tree'?'職業技能樹':'聲音與手機設定';if(kind==='gear')drawInventory();else if(kind==='tree')drawTree();else syncSettings();$('#panelclose').focus();syncAudio()}
+function panelOpen(kind){cancelMouse();if(mode==='layout')return;if(mode!=='panel')panelReturn=mode;mode='panel';activePanel=kind;attackHeld=false;keys={};joy.x=joy.y=0;clearAim();$('#stick').style.transform='';$('#panel').hidden=false;$('#gearview').hidden=kind!=='gear';$('#settingsview').hidden=kind!=='settings';$('#treeview').hidden=kind!=='tree';$('#townview').hidden=kind!=='town';$('#paneltitle').textContent=kind==='gear'?'行者裝備':kind==='tree'?'職業技能樹':kind==='town'?(townFocus==='waypoint'?'傳送石碑':'城鎮寶箱'):'聲音與手機設定';if(kind==='town')drawTown();if(kind==='gear')drawInventory();else if(kind==='tree')drawTree();else syncSettings();$('#panelclose').focus();syncAudio()}
 function panelClose(){if(mode!=='panel')return;$('#panel').hidden=true;mode=panelReturn;activePanel='';keys={};syncAudio();saveProgress(true)}
+// 就算收面板途中有嘢炒咗，畫面都一定要收得返，唔可以困住玩家。
+function forcePanelClose(){
+ try{panelClose()}
+ catch(err){
+  reportRuntimeError(err,'關閉面板');
+  $('#panel').hidden=true;activePanel='';keys={};
+  if(mode==='panel')mode=panelReturn==='panel'?'play':panelReturn;
+ }
+}
+// 出事嗰陣要睇得到係邊步死，唔係得個「冇反應」。訊息寫喺設定頁，方便截圖。
+let lastRuntimeError='';
+function reportRuntimeError(err,where){
+ lastRuntimeError=(where||'')+' · '+((err&&(err.message||err.reason&&err.reason.message))||String(err||''));
+ const status=$('#save-status');
+ if(status)status.textContent='⚠️ 出錯：'+lastRuntimeError;
+ if(typeof toast==='function')toast('⚠️ 出錯 · '+lastRuntimeError.slice(0,60));
+}
+addEventListener('error',e=>reportRuntimeError(e.error||e,'畫面'));
+addEventListener('unhandledrejection',e=>reportRuntimeError(e.reason||e,'背景'));
 // Fullscreen must be requested directly from a player's tap.
 let fullscreenBusy=false;
 function fullscreenElement(){return document.fullscreenElement||document.webkitFullscreenElement}
@@ -163,7 +182,11 @@ function initFeatures(){
  syncMobileOrientation();addEventListener('resize',syncMobileOrientation);
  addEventListener('keydown',e=>{if(mobileOrientationBlocked){e.preventDefault();e.stopImmediatePropagation()}},true);
  muted=!preferences.sound;$('#sound').textContent='音效 '+(preferences.sound?'ON':'OFF');document.body.classList.toggle('low-quality',preferences.quality==='smooth');applyControls();
- $('#gearbtn').onclick=()=>{if(p)panelOpen('gear')};$('#settingsbtn').onclick=()=>panelOpen('settings');$('#panelclose').onclick=panelClose;
+ $('#gearbtn').onclick=()=>{if(p)panelOpen('gear')};$('#settingsbtn').onclick=()=>panelOpen('settings');
+ // 2026-09-09：使用者試玩時面板收唔到，撳極都冇反應。關閉唔可以再靠單一個掣：
+ // ✕ 掣、撳面板以外嘅暗位、Esc 三條路都要收得到，而且一步都唔准 throw。
+ $('#panelclose').onclick=()=>forcePanelClose();
+ $('#panel').addEventListener('pointerdown',e=>{if(e.target===$('#panel'))forcePanelClose()});
  $('#quality-high').onclick=()=>{preferences.quality='quality';applyQuality()};$('#quality-low').onclick=()=>{preferences.quality='smooth';applyQuality()};$('#sound-enabled').onchange=e=>setSound(e.target.checked);
  for(const [id,key,mul]of [['sfxvolume','sfx',100],['musicvolume','music',100],['controlsize','size',1],['controlopacity','opacity',1]])$('#'+id).oninput=e=>{preferences[key]=Number(e.target.value)/mul;applyControls();syncSettings();syncAudio();savePreferences()};
  $('#editlayout').onclick=beginLayout;$('#layoutdone').onclick=finishLayout;$('#resetlayout').onclick=()=>{preferences.layouts[orientationKey()]={};applyControls();savePreferences()};

@@ -44,7 +44,7 @@ function treeSkill(){return skillTrees[chosen][activeSkill]}
 // 2026-09-08: 招式升到新形態會改名，但 HUD／換招／快捷掣一直攞死咗嗰個流派名，
 // 所以玩家見到「已學習 重鐘餘震」之後粒掣仲寫住「焚鐘共鳴」。名跟形態走。
 function skillFormName(branch){const spec=skillTrees[chosen][branch];return (spec.nodes[Math.max(0,(ranks[branch]||1)-1)]||spec.nodes[0])[0]}
-function resetExpansion(){ranks=[1,0,0];resetProgression();skillPoints=2;activeSkill=0;skillTimers=[0,0,0];castFields=[];wards=[];spawnSerial=0;routeStage=0;p.shield=0;p.chill=0;p.poison=0;p.poisonTick=0;p.satiety=0;p.curse=0;p.rewind=null;resetAngel();selectedTreeNode={branch:0,tier:0};$('#treebtn').hidden=false;seedEquipment();syncSkillLabel()}
+function resetExpansion(){ranks=[1,0,0];resetProgression();resetTown();skillPoints=2;activeSkill=0;skillTimers=[0,0,0];castFields=[];wards=[];spawnSerial=0;routeStage=0;p.shield=0;p.chill=0;p.poison=0;p.poisonTick=0;p.satiety=0;p.curse=0;p.rewind=null;resetAngel();selectedTreeNode={branch:0,tier:0};$('#treebtn').hidden=false;seedEquipment();syncSkillLabel()}
 function syncSkillLabel(){if(!p)return;$('#skill span').textContent=skillFormName(activeSkill);$('#treebtn').textContent='技能'+(skillPoints?' · '+skillPoints:'');$('#skillcycle').textContent='換招 · '+skillFormName(activeSkill);skillCD=skillTimers[activeSkill];drawSkillIcon()}
 function selectSkill(i){if(!ranks[i]||casts.length)return;skillTimers[activeSkill]=skillCD;activeSkill=i;clearAim();syncSkillLabel();if(activePanel==='tree')drawTree()}
 function cycleSkill(){if(mode!=='play')return;for(let i=1;i<=3;i++){const next=(activeSkill+i)%3;if(ranks[next]){selectSkill(next);return}}}
@@ -66,12 +66,16 @@ function releaseExpansion(c){const b=c.branch||0,r=c.rank||1;castingBranch=b;con
  else if(c.type===3&&b===0)fanShot(c,5+r*2,40*power,r*2,3);
  else if(c.type===3&&b===1){burstAt(c.x,c.y,135+r*25,75*power,3,.4+r*.6);if(r===3)castFields.push({kind:'meteor',x:c.x,y:c.y,r:180,delay:1.1,life:2,damage:65*power,element:3})}
 }
-function modifyEnemy(f,forced){const n=++spawnSerial,idx=forced??(n<3?0:rollAffixIndex());f.affix=affixes[idx].key;f.affixIndex=idx;f.name=affixes[idx].name+' · '+f.name;f.color=affixes[idx].color;f.elite=n>4&&Math.random()<.085;f.special=rnd(2,5);f.frozen=0;f.tick=rnd(1,3);
+function modifyEnemy(f,forced){const n=++spawnSerial,idx=forced??(n<3?0:rollAffixIndex());f.affix=affixes[idx].key;f.affixIndex=idx;f.name=affixes[idx].name+' · '+f.name;f.color=affixes[idx].color;f.elite=n>4&&Math.random()<ELITE_CHANCE;f.special=rnd(2,5);f.frozen=0;f.tick=rnd(1,3);
  if(f.affix==='iron'){f.hp*=1.4;f.speed*=.8}
  if(f.affix==='storm')f.speed*=1.25;
  if(f.affix==='haste'){f.speed*=1.35;f.hp*=.8}
  if(f.affix==='warden'){f.hp*=1.25;f.speed*=.9}
  if(f.affix==='mender')f.hp*=1.15;
+ // 第二個特性只改數值唔改行為（行為 hook 全部認 f.affix），
+ // 令未出新怪之前同一款怪都唔會隻隻一模一樣。
+ if(forced===undefined&&n>=3&&Math.random()<SECOND_AFFIX_CHANCE){const j=rollAffixIndex(),a=affixes[j].key;f.affix2=a;
+  if(a==='iron'){f.hp*=1.25;f.speed*=.88}else if(a==='storm')f.speed*=1.15;else if(a==='haste'){f.speed*=1.2;f.hp*=.9}else if(a==='warden'){f.hp*=1.15;f.speed*=.95}else if(a==='mender')f.hp*=1.1;}
  if(f.elite){f.hp*=rnd(1.5,1.95);f.scale=(f.scale||1)*1.18;f.name='精英 · '+f.name}
  f.maxhp=f.hp}
 function adjustedDamage(f,d,element){const a=affixes[f.affixIndex||0];if(a.resist===element)d*=.5;if(a.weak===element)d*=1.25;if(f.warded>0&&f.affix!=='warden')d*=.65;return d}

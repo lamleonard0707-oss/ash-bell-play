@@ -28,7 +28,7 @@ const upgradeDefs=[
 const UPGRADE_MAX=5;
 
 const attrDefs=[
- {key:'vit',name:'體',text:'生命上限 +12、每秒回復 +0.4'},
+ {key:'vit',name:'體',text:'生命上限 +12、每秒回復 +0.12（受傷後 4 秒停）'},
  {key:'str',name:'力',text:'傷害 +1%、減傷 +0.4%；解鎖重裝備需求'},
  {key:'dex',name:'敏',text:'攻速 +0.8%、移速 +0.6%；解鎖靈巧裝備需求'},
  {key:'eng',name:'魔',text:'靈息回復 +0.25／秒、技能傷害 +0.6%'}
@@ -73,7 +73,10 @@ function attrEffective(n){
 }
 function attrValue(key){return attrEffective(attrs[key]||0)}
 function attrHealth(){return Math.round(attrValue('vit')*12)}
-function attrRegenHp(){return attrValue('vit')*.4}
+// 2026-09-09：每點體 0.4／秒係冇上限嘅，夾埋 +12 最大血，玩家企定挨打都回得返，
+// Boss 打唔死人。回血減到 0.12／秒，再封頂每秒最多回最大血嘅 1%。
+let REGEN_CAP_RATIO=.01,REGEN_LOCK_SECONDS=4;
+function attrRegenHp(){const raw=attrValue('vit')*.12;return p?Math.min(raw,p.maxhp*REGEN_CAP_RATIO):raw}
 function attrDamageMult(){return 1+attrValue('str')*.01}
 function attrArmor(){return attrValue('str')*.4}
 function attrHaste(){return attrValue('dex')*.8}

@@ -105,7 +105,8 @@ function potion(){if(mode!=='play'||potions<=0||p.hp>=p.maxhp)return;potions--;p
 // BUG-006: damage over time must not grant invulnerability frames. Direct hits
 // still use p.inv; ticking sources pass {dot:true} and neither read nor set it.
 function hurt(d,ailment,opts){const dot=!!(opts&&opts.dot);if(mode!=='play')return;if(!dot&&p.inv>0)return;
- if(angelAirborne()){if(opts&&opts.contact){num(p.x,p.y-110,'落空','#f2ead6');return}if(!dot)d*=1.25}if(ailment==='frost')p.chill=2.5;if(ailment==='venom'){p.poison=4;p.poisonTick=1}d*=difficulty().damage*tierSpec().damage;d*=(equipped.amulet?.effect==='guard'?.88:1)*(1-Math.min(60,gearStats().armor+attrArmor())/100);const absorb=Math.min(p.shield||0,d);p.shield=Math.max(0,(p.shield||0)-absorb);p.hp-=d-absorb;if(!dot)p.inv=.32;damageFlash=dot?.28:.55;shake=dot?2:6;ring(p.x,p.y,dot?'#9ac25a':'#dc6554',dot?20:30,.2);if(!dot)playSfx('impact',p.x,1);if(p.hp<=0){p.hp=0;end(false)}}
+ p.regenLock=REGEN_LOCK_SECONDS;
+ if(angelAirborne()){if(opts&&opts.contact){num(p.x,p.y-110,'落空','#f2ead6');return}if(!dot)d*=1.25}if(ailment==='frost')p.chill=2.5;if(ailment==='venom'){p.poison=4;p.poisonTick=1}d*=ENEMY_DAMAGE_SCALE*difficulty().damage*tierSpec().damage;d*=(equipped.amulet?.effect==='guard'?.88:1)*(1-Math.min(60,gearStats().armor+attrArmor())/100);const absorb=Math.min(p.shield||0,d);p.shield=Math.max(0,(p.shield||0)-absorb);p.hp-=d-absorb;if(!dot)p.inv=.32;damageFlash=dot?.28:.55;shake=dot?2:6;ring(p.x,p.y,dot?'#9ac25a':'#dc6554',dot?20:30,.2);if(!dot)playSfx('impact',p.x,1);if(p.hp<=0){p.hp=0;end(false)}}
 function openModal(eyebrow,title,body,buttons){cancelMouse();mode='modal';clearAim();attackHeld=false;joy.x=joy.y=0;$('#stick').style.transform='';$('#modal').hidden=false;$('#modaleyebrow').textContent=eyebrow;$('#modaltitle').textContent=title;$('#modaltext').textContent=body;$('#choices').replaceChildren();buttons.forEach(b=>{const el=document.createElement('button');el.innerHTML=`<b>${b[0]}</b><small>${b[1]}</small>`;el.onclick=b[2];$('#choices').append(el)})}
 function resume(){mode='play';$('#modal').hidden=true;keys={}}function upgrade(){pendingUpgrade--;openModal('靈息覺醒 · LEVEL '+level,'選擇一項刻印','停一停，力量由你決定。',[['餘燼刻印','攻擊傷害 +20%',()=>{damageMult*=1.2;resume()}],['疾行刻印','攻速 +15%，移動速度 +8%',()=>{speedMult*=1.15;p.boost=0;resume()}],['生息刻印','生命上限 +25，立即回滿生命',()=>{p.maxhp+=25;p.hp=p.maxhp;resume()}]])}
 // BUG-001: restarting used to wipe the autosave 8 seconds later. Abandoning a run
@@ -118,7 +119,7 @@ function togglePause(){if(mode==='play')openModal('聖所靜止','暫停','呼�
 $('#pause').onclick=togglePause;$('#sound').onclick=()=>{setSound(!preferences.sound);tone(440,.1)};
 for(const [id,fn]of [['dash',dash],['potion',potion]])$('#'+id).addEventListener('pointerdown',e=>{e.preventDefault();fn()});$('#attack').addEventListener('pointerdown',e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);attackHeld=true;attack()});for(const evt of ['pointerup','pointercancel','lostpointercapture'])$('#attack').addEventListener(evt,()=>attackHeld=false);
 const j=$('#joystick');function moveJoy(e){const r=j.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,l=Math.hypot(x,y),max=35;joy.x=l>5?x/Math.max(max,l):0;joy.y=l>5?y/Math.max(max,l):0;$('#stick').style.transform=`translate(${joy.x*max}px,${joy.y*max}px)`}j.addEventListener('pointerdown',e=>{joy.id=e.pointerId;j.setPointerCapture(e.pointerId);moveJoy(e)});j.addEventListener('pointermove',e=>{if(e.pointerId===joy.id)moveJoy(e)});for(const evt of ['pointerup','pointercancel','lostpointercapture'])j.addEventListener(evt,()=>{joy.id=null;joy.x=joy.y=0;$('#stick').style.transform=''});
-addEventListener('keydown',e=>{if(mode==='panel'||mode==='layout'){if(e.key==='Escape'){e.preventDefault();mode==='layout'?finishLayout():panelClose()}return}if(e.key.toLowerCase()==='i'&&p){panelOpen('gear');return}if(e.key==='Alt'){e.preventDefault();if(!e.repeat&&p)toggleLootLabels();return}if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys[e.key.toLowerCase()]=true;if(e.repeat)return;if(e.key.toLowerCase()==='k')skill();if(e.key===' ')dash();if(e.key.toLowerCase()==='h')potion();if(e.key==='Escape')togglePause()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>{keys={};attackHeld=false;joy.x=joy.y=0;if(mode==='play')togglePause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play')togglePause()});
+addEventListener('keydown',e=>{if(mode==='panel'||mode==='layout'){if(e.key==='Escape'){e.preventDefault();mode==='layout'?finishLayout():forcePanelClose()}return}if(e.key.toLowerCase()==='i'&&p){panelOpen('gear');return}if(e.key==='Alt'){e.preventDefault();if(!e.repeat&&p)toggleLootLabels();return}if(e.key.toLowerCase()==='e'&&p&&!e.repeat){const near=townStructures().filter(townReach).sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];if(near){useTownStructure(near);return}}if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();keys[e.key.toLowerCase()]=true;if(e.repeat)return;if(e.key.toLowerCase()==='k')skill();if(e.key===' ')dash();if(e.key.toLowerCase()==='h')potion();if(e.key==='Escape')togglePause()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>{keys={};attackHeld=false;joy.x=joy.y=0;if(mode==='play')togglePause()});document.addEventListener('visibilitychange',()=>{if(document.hidden&&mode==='play')togglePause()});
 function updateHUD(){if(!p)return;
  ui.hp.textContent=Math.ceil(p.hp);ui.mp.textContent=Math.floor(p.mp);ui.level.textContent='LV. '+level;ui.xp.style.width=(xp/xpNeed*100)+'%';
  ui.health.style.setProperty('--fill',Math.max(0,p.hp/p.maxhp*100)+'%');ui.mana.style.setProperty('--fill',p.mp+'%');
@@ -136,7 +137,8 @@ function updateHUD(){if(!p)return;
 }
 function update(dt){
  if(impactFreeze>0){impactFreeze-=dt;return}elapsed+=dt;attackCD-=dt;skillCD=Math.max(0,skillCD-dt);dashCD=Math.max(0,dashCD-dt);p.inv-=dt;p.boost-=dt;p.action=Math.max(0,p.action-dt);p.mp=Math.min(100,p.mp+((equipped.amulet?.effect==='mana'?7:5)+gearStats().regen+buildManaRegen()+attrManaRegen())*dt*(chosen===5?0:1));
- if(attrRegenHp()>0&&p.hp>0)p.hp=Math.min(p.maxhp,p.hp+attrRegenHp()*dt);
+ p.regenLock=Math.max(0,(p.regenLock||0)-dt);
+ if(attrRegenHp()>0&&p.hp>0&&p.regenLock<=0)p.hp=Math.min(p.maxhp,p.hp+attrRegenHp()*dt);
  let dx=joy.x+(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=joy.y+(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0),len=Math.hypot(dx,dy);const mm=mouseMovement(dt,len>.05);if(mm){dx=mm.x;dy=mm.y;len=Math.hypot(dx,dy)}const moveStart={x:p.x,y:p.y};
  if(len){dx/=Math.max(1,len);dy/=Math.max(1,len);p.dx=dx;p.dy=dy;const speed=classes[chosen].speed*movementFactor()*(1+(speedMult-1)*.53)*(1+(gearStats().speed+attrSpeed())/100)*(p.boost>0?1.6:1)*(p.chill>0?.65:1)*angelSpeedMult();p.x+=dx*speed*dt;p.y+=dy*speed*dt;confine(p)}
  updateTravel(moveStart,dt);updateSkillVisuals(dt);updateExpansion(dt);updateAngel(dt);if(mode!=='play')return;if(attackHeld||keys.j)attack();
@@ -181,6 +183,7 @@ function update(dt){
  for(let i=dashFields.length-1;i>=0;i--){const z=dashFields[i];z.life-=dt;z.tick-=dt;if(z.tick<=0){z.tick=.45;for(const f of foes)if(f.hp>0&&dist(z,f)<34){hit(f,7*gearPower());addVFX(z.type,f.x,f.y,45,.35)}}if(z.life<=0)dashFields.splice(i,1)}
  // BUG-003: only consumables are magnetic. Gear stays where it fell, and a failed
  // pickup backs off instead of teleporting beside the player and refreshing its life.
+ pushEnemiesOutOfTown();
  for(const d of drops){d.life-=dt;
   if(d.type==='gear'){d.retry=Math.max(0,(d.retry||0)-dt);continue}
   if(dist(d,p)<95){d.x+=(p.x-d.x)*dt*5;d.y+=(p.y-d.y)*dt*5}
@@ -242,10 +245,12 @@ function render(){
  else{const floor=chapterBackground();if(floor&&(floor.naturalWidth||floor.width))ctx.drawImage(floor,0,0,world.w,world.h)}
  if(selecting){for(const o of [...props].sort((a,b)=>a.y-b.y))drawProp(o)}
  if(!selecting){
+  drawTownGround();
   drawExpansion();drawExploration();
   for(const q of scorches){ctx.globalAlpha=Math.min(.45,q.life/8);ctx.fillStyle=q.color;ctx.beginPath();ctx.ellipse(q.x,q.y,q.r,q.r*.45,0,0,7);ctx.fill()}ctx.globalAlpha=1;
   for(const o of props)if((o.broken||o.r===0)&&o.x>cam.x-200&&o.x<cam.x+visibleW+200&&o.y>cam.y-200&&o.y<cam.y+visibleH+240)drawProp(o);for(const f of corpses)monster(f,true);
   for(const h of hazards){const pulse=.2+Math.sin(time*15)*.05;ctx.fillStyle=`rgba(174,55,20,${pulse})`;ctx.beginPath();ctx.ellipse(h.x,h.y,h.r,h.r*.57,0,0,7);ctx.fill();groundRing(h.x,h.y,h.r,'#de8246',.75,2);groundRing(h.x,h.y,h.r*(1-h.life/h.max),'#f0b170',.7,2)}
+  drawTownStructures();
   lootLabelBounds.length=0;for(const d of drops){if(d.type==='gear'){drawGearDrop(d);continue}const col=d.type==='heal'?'#d94735':d.type==='potion'?'#e5b0a4':'#558bda';glow(ctx,d.x,d.y-4,24,col,.4);if(d.type==='potion')glow(ctx,d.x,d.y-10,34,'#ffd9c0',.28);ctx.save();ctx.translate(d.x,d.y);ctx.fillStyle=col;ctx.strokeStyle='#cdb385';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-3,-13);ctx.lineTo(3,-13);ctx.lineTo(3,-9);ctx.lineTo(6,-5);ctx.lineTo(5,2);ctx.lineTo(-5,2);ctx.lineTo(-6,-5);ctx.lineTo(-3,-9);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
   for(const t of turrets){glow(ctx,t.x,t.y-15,47,'#b2c39a',.2);drawSprite(ctx,fxArt,fxFrames[6],t.x,t.y,64+Math.sin(time*2)*2);groundRing(t.x,t.y,22,'#95a16b',.3,1)}
   for(const z of dashFields){ctx.save();ctx.globalAlpha=Math.min(.22,z.life*.12);figure(ctx,z.x,z.y,chosen,time,.9,z.dx,z.dy);ctx.restore();groundRing(z.x,z.y,26,classes[z.type].color,Math.min(.3,z.life*.14),1)}

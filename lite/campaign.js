@@ -145,7 +145,7 @@ function campaignTierCleared(){
 function rollGuardRole(){const w=mapSpec().roles||[.4,.3,.3],r=Math.random();return r<w[0]?0:r<w[0]+w[1]?1:2}
 function campaignSpawn(type){
  const m=mapSpec(),variant=Math.max(0,Math.min(2,type)),angle=rnd(0,Math.PI*2),at={x:p.x+Math.cos(angle)*rnd(300,430),y:p.y+Math.sin(angle)*rnd(300,430)};confine(at);
- const base=95*Math.pow(1.33,routeStage)*rnd(.86,1.2),health=base*[.85,1.65,1][variant]*difficulty().hp*tierSpec().hp;
+ const base=95*Math.pow(1.33,routeStage)*rnd(.86,1.2),health=base*[.85,1.65,1][variant]*MOB_HEALTH_SCALE*difficulty().hp*tierSpec().hp;
  // build variation is per-enemy so a wave never reads as one repeated cut-out
  const build=rnd(.86,1.16),lanky=rnd(.9,1.12);
  const f={...at,type:variant,campaign:true,mapId:routeStage,name:m.enemy+[' · 突擊',' · 重裝',' · 遠射'][variant],hp:health,maxhp:health,r:(variant===1?24:18)*build,speed:(72+routeStage*3-variant*9)*difficulty().speed*tierSpec().speed*rnd(.88,1.14),color:m.color,hit:0,attack:rnd(.8,1.9),phase:rnd(0,6),action:0,state:'emerge',stateT:rnd(.45,.85),walk:rnd(0,6),burn:0,burnTick:0,frozen:0,scale:(variant===1?1.18:1)*build,lanky,gait:rnd(.85,1.2),bob:rnd(.7,1.4)};
@@ -170,7 +170,7 @@ function bossHint(id){const t=bossKit(id).traits;
  return t.includes('shielded')?'護衛結界 · 先清護衛':t.includes('reflect')?'立盾時反傷 · 等佢收盾':t.includes('armored')?'重甲 · 衝鋒後有破綻':t.includes('teleport')?'會閃現同放分身':t.includes('regen')?'會回血 · 要壓輸出':t.includes('summoner')?'會不斷召援':t.includes('frenzy')?'越打越快':'留意地面預警'}
 function campaignEnter(stage){
  if(stage!==pendingChapter||stage<1||stage>campaignMaps.length-1)return;
- for(const d of drops)if(d.type==='gear'){if(bag.length<70){delete d.item.grid;bag.push(d.item)}else if(d.item.rarity==='legendary')queueReward(d.item);}
+ // 清場結算都唔再自動執地上嘅嘢；淨係關卡獎勵先入袋。
  routeStage=stage;pendingChapter=-1;wave=stage*3+1;bossSpawned=false;waveSpawn=0;rest=2;
  foes=[];shots=[];drops=[];hazards=[];turrets=[];castFields=[];wards=[];casts.length=0;burnZones.length=0;dashFields.length=0;corpses.length=0;effects=[];particles.length=0;scorches.length=0;ghosts.length=0;numbers=[];skillVisuals.length=0;
  populateMap(stage);
@@ -178,7 +178,7 @@ function campaignEnter(stage){
  potions=Math.max(potions,Math.min(potionCap(),3));grantPendingRewards();
  $('#modal').hidden=true;$('#bossbar').hidden=true;mode='play';cancelMouse();chapterFade=1;saveProgress(true);
 }
-function campaignGate(){const stage=pendingChapter;if(stage<1)return;const m=mapSpec(stage),loose=drops.filter(d=>d.type==='gear').length,extra=loose&&bag.length>=70?' ⚠️ 地上仲有 '+loose+' 件裝備，背包已滿。傳奇會自動保留，其餘離開後唔會帶走。':'';
+function campaignGate(){const stage=pendingChapter;if(stage<1)return;const m=mapSpec(stage),loose=drops.filter(d=>d.type==='gear').length,extra=loose?' ⚠️ 地上仲有 '+loose+' 件裝備冇執，離開之後就冇咗。':'';
  openModal('地圖 '+stage+' / '+campaignMaps.length+' · 完成',mapSpec(stage-1).name+' · 守軍已退', '下一站：'+m.act+' · '+m.name+'（建議 LV.'+m.lv+'）。成長與裝備會保留。'+extra,[['前往 '+m.name,m.subtitle,()=>enterChapter(stage)],['整理裝備','換裝或騰出背包空間',()=>panelOpen('gear')],['返回戰場拾取','整理後拾取遺物，再按「前往下一圖」',()=>{$('#modal').hidden=true;mode='play'}],['儲存進度','保存目前檢查點',()=>saveProgress(false)]]);
 }
 // --- boss moves ---------------------------------------------------------------

@@ -46,7 +46,8 @@ function entryPoint(){return {x:world.w*.5,y:world.h-190}}
 // Enemy budget per map: enough to fill ten to fifteen minutes of moving and fighting.
 // Sized for a ten to fifteen minute map: most of it is dormant until you walk
 // into a zone, so only a few dozen are ever awake at once.
-function garrisonSize(id){return Math.round(330-id*11)}
+// 2026-09-09：使用者要「怪少啲、強啲」，一打二三就要吃力。守軍數量斬 45%。
+function garrisonSize(id){return Math.round((330-id*11)*.55)}
 
 function populateMap(id){
  const rand=exploreRng(id);
@@ -83,7 +84,7 @@ function populateMap(id){
  for(const z of pool){if(picked.length>=3)break;if(picked.every(q=>Math.hypot(q.x-z.x,q.y-z.y)>3400))picked.push(z)}
  while(picked.length<3&&pool.length)picked.push(pool[Math.floor(rand()*pool.length)]);
  mapSeals=picked.slice(0,3).map((z,i)=>{const hp=Math.round(420*Math.pow(1.33,id));return {x:z.x,y:z.y,hp,maxhp:hp,broken:false,index:i}});
- for(const s of mapSeals)for(let n=0;n<6;n++){const a=rand()*Math.PI*2;placeSleeper(id,s.x+Math.cos(a)*rnd(120,190),s.y+Math.sin(a)*rnd(100,150),rand,true)}
+ for(const s of mapSeals)for(let n=0;n<4;n++){const a=rand()*Math.PI*2;placeSleeper(id,s.x+Math.cos(a)*rnd(120,190),s.y+Math.sin(a)*rnd(100,150),rand,true)}
  // Camps seeded along the objective route. Without these the critical path is a
  // long walk through empty ground; the scattered camps mostly sit off to the side.
  const route=[entryPoint(),...mapSeals,{x:world.w*.5,y:playBounds().y0+180}];
@@ -93,13 +94,15 @@ function populateMap(id){
   confine(at);
   if(Math.hypot(at.x-entryPoint().x,at.y-entryPoint().y)<600)continue;
   const z={x:at.x,y:at.y,r:250+rand()*130,cleared:false};zones.push(z);
-  const n=Math.max(5,Math.round(14-id*0.75))+Math.floor(rand()*4);
+  const n=Math.max(3,Math.round((14-id*0.75)*.55))+Math.floor(rand()*3);
   for(let k=0;k<n;k++){const a=rand()*Math.PI*2,d=rand()*z.r;placeSleeper(id,z.x+Math.cos(a)*d,z.y+Math.sin(a)*d*.8,rand)}
  }
 }
 
 function placeSleeper(id,x,y,rand,guard){
  const at={x,y};confine(at);
+ // 休息區入面唔擺守軍：呢個係唯一一笪唔使打嘅地方。
+ if(typeof inTown==='function'&&inTown(at.x,at.y))return;
  const f=campaignSpawn(Math.random()<.34?0:Math.random()<.6?1:2);
  f.x=at.x;f.y=at.y;f.asleep=true;f.state='idle';f.stateT=0;f.homeX=at.x;f.homeY=at.y;
  if(guard){f.guardOfSeal=true;f.hp*=1.15;f.maxhp=f.hp}
@@ -169,7 +172,7 @@ function exploreBossCheck(){
 }
 function spawnExploreBoss(){
  const m=mapSpec(),kit=bossKit(routeStage);
- const hp=1635*Math.pow(1.41,routeStage)*kit.hp*difficulty().hp*tierSpec().hp*rnd(.94,1.08);
+ const hp=1635*Math.pow(1.41,routeStage)*BOSS_HEALTH_SCALE*kit.hp*difficulty().hp*tierSpec().hp*rnd(.94,1.08);
  const speed=(58+routeStage*4)*kit.pace*difficulty().speed*tierSpec().speed;
  // keep the campaign's wave bookkeeping in step: reaching the boss is wave 3.
  bossSpawned=true;bossGate=null;wave=routeStage*3+3;waveSpawn=0;
