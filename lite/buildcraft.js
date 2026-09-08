@@ -6,7 +6,7 @@ const difficulties=[
  {name:'困難',hp:2.2,damage:2.1,speed:1.16,tempo:.78,note:'走位與技能連動至關重要'},
  {name:'超難',hp:3.1,damage:3,speed:1.25,tempo:.65,note:'高壓攻勢 · 留意預警及資源'}
 ];
-let runDifficulty=0,talents=Array(9).fill(0),lastCastBranch=-1,lastCastAt=-99,comboUntil=0;
+let runDifficulty=0,talents=Array(12).fill(0),lastCastBranch=-1,lastCastAt=-99,comboUntil=0;
 const talentDefs=[
  {name:'接力',max:5,req:[1,1,0],text:'五秒內接續不同路線，返還 每點 3 靈息。'},
  {name:'護脈',max:5,req:[0,1,1],text:'接續不同路線獲得生命上限 每點 3% 護盾。'},
@@ -16,20 +16,25 @@ const talentDefs=[
  {name:'通脈',max:5,req:[1,0,2],text:'所有技能消耗減少 每點 2 靈息。'},
  {name:'破陣',max:5,req:[3,2,0],text:'對燃燒、緩速或冰凍敵人傷害 +每點 10%。'},
  {name:'共生',max:5,req:[0,3,2],text:'每件魔法／傳奇裝備提供 每點 +0.15 靈息每秒。'},
- {name:'三脈合一',max:5,req:[2,2,3],text:'三條路線都學習時，連招護盾另加 每點 4%，冷卻另減 每點 5%。'}
+ {name:'三脈合一',max:5,req:[2,2,3],text:'三條路線都學習時，連招護盾另加 每點 4%，冷卻另減 每點 5%。'},
+ // 專精天賦：單修一條線先開得到，補返專攻玩家點唔到跨線天賦嘅窿。
+ // 條件係該流派第 4 階（技能 LV.24），效果只作用喺自己嗰條線。
+ {name:'專精一',max:5,req:[4,0,0],text:'第一條流派傷害 +每點 6%、冷卻 −每點 3%（最多 −15%）。'},
+ {name:'專精二',max:5,req:[0,4,0],text:'第二條流派傷害 +每點 6%、冷卻 −每點 3%（最多 −15%）。'},
+ {name:'專精三',max:5,req:[0,0,4],text:'第三條流派傷害 +每點 6%、冷卻 −每點 3%（最多 −15%）。'}
 ];
 const classMarks=['焚鐘印','骨芽印','裂頁印','霜契印','血宴印','墜羽印'];
 function difficulty(){return difficulties[runDifficulty]||difficulties[0]}
-function resetBuildcraft(){runDifficulty=Number($('#difficulty').value)||0;runTier=0;tiersCleared=tiersCleared.map(()=>false);talents=Array(9).fill(0);lastCastBranch=-1;lastCastAt=-99;comboUntil=0;}
-function validBuildSave(s){if(s.runDifficulty!==undefined&&(!Number.isInteger(s.runDifficulty)||s.runDifficulty<0||s.runDifficulty>3))throw Error('難度存檔不正確');if(s.talents!==undefined&&(!Array.isArray(s.talents)||s.talents.length!==9||s.talents.some(v=>!Number.isInteger(v)||v<0||v>5)))throw Error('天賦存檔不正確');}
+function resetBuildcraft(){runDifficulty=Number($('#difficulty').value)||0;runTier=0;tiersCleared=tiersCleared.map(()=>false);talents=Array(12).fill(0);lastCastBranch=-1;lastCastAt=-99;comboUntil=0;}
+function validBuildSave(s){if(s.runDifficulty!==undefined&&(!Number.isInteger(s.runDifficulty)||s.runDifficulty<0||s.runDifficulty>3))throw Error('難度存檔不正確');if(s.talents!==undefined&&(!Array.isArray(s.talents)||![9,12].includes(s.talents.length)||s.talents.some(v=>!Number.isInteger(v)||v<0||v>5)))throw Error('天賦存檔不正確');}
 function learnTalent(i){const d=talentDefs[i];if(mode!=='panel'||activePanel!=='tree'||!d||skillPoints<1||talents[i]>=d.max||d.req.some((v,j)=>ranks[j]<v))return;talents[i]++;skillPoints--;drawTree();syncSkillLabel();markDirty();}
 function talentGap(d){return d.req.map((v,j)=>v&&ranks[j]<v?skillTrees[chosen][j].name+' 第 '+v+' 階（目前 '+ranks[j]+'）':'').filter(Boolean)}
 function drawTalents(){const root=$('#talent-web');root.replaceChildren();
- for(let i=0;i<9;i++){
+ for(let i=0;i<talentDefs.length;i++){
   const d=talentDefs[i],gap=talentGap(d),maxed=talents[i]>=d.max,b=document.createElement('button');
   b.className='talent-node'+(talents[i]?' learned':'')+(gap.length?' locked':'');
   const status=maxed?'已點滿':gap.length?'仲差：'+gap.join('、'):skillPoints<1?'技能點不足':'可以點';
-  b.textContent=(i===3?classMarks[chosen]:d.name)+' '+talents[i]+'/'+d.max+'\n'+d.text.replaceAll('靈息',resourceName())+'\n'+status;
+  b.textContent=(i===3?classMarks[chosen]:i>=9?'專精 · '+skillTrees[chosen][i-9].name:d.name)+' '+(talents[i]||0)+'/'+d.max+'\n'+d.text.replaceAll('靈息',resourceName())+'\n'+status;
   b.title='前置：'+(d.req.map((n,j)=>n?skillTrees[chosen][j].name+' 第 '+n+' 階':'').filter(Boolean).join(' ＋ ')||'無');
   b.disabled=maxed||skillPoints<1||gap.length>0;b.onclick=()=>learnTalent(i);root.append(b);
  }}
@@ -41,7 +46,7 @@ function buildDamage(f,d){return d*(comboUntil>elapsed?1+talents[3]*.08:1)*((f.b
 function buildManaRegen(){return talents[7]*.15*Object.values(equipped).filter(i=>i&&i.rarity!=='common').length}
 let cursorPosition=null;
 function cursorAim(){if(!p||!cursorPosition)return undefined;const at=mouseWorld(cursorPosition.x,cursorPosition.y),a=Math.atan2(at.y-p.y,at.x-p.x);return {...at,dx:Math.cos(a),dy:Math.sin(a)}}
-function buildHUD(){if(!p)return;for(let i=0;i<3;i++){const b=$('#quickskill'+i),cd=i===activeSkill?skillCD:skillTimers[i];b.textContent=(i+1)+' · '+skillTrees[chosen][i].name+'\n'+(!ranks[i]?'未學習':cd>0?cd.toFixed(1)+' 秒':'就緒');b.disabled=!ranks[i]||cd>0;b.className=activeSkill===i?'active':'';}$('#difficulty-label').textContent=difficulty().name;}
+function buildHUD(){if(!p)return;for(let i=0;i<3;i++){const b=$('#quickskill'+i),cd=i===activeSkill?skillCD:skillTimers[i];b.textContent=(i+1)+' · '+skillFormName(i)+'\n'+(!ranks[i]?'未學習':cd>0?cd.toFixed(1)+' 秒':'就緒');b.disabled=!ranks[i]||cd>0;b.className=activeSkill===i?'active':'';}$('#difficulty-label').textContent=difficulty().name;}
 function initBuildcraft(){initTiers();const sel=$('#difficulty');for(let i=0;i<4;i++){const o=document.createElement('option');o.value=i;o.textContent=difficulties[i].name+' · '+difficulties[i].note;sel.append(o)}sel.value='0';for(let i=0;i<3;i++)$('#quickskill'+i).onclick=()=>castLoadout(i);addEventListener('keydown',e=>{if(!e.repeat&&['1','2','3'].includes(e.key)){e.preventDefault();castLoadout(Number(e.key)-1)}});canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')cursorPosition={x:e.clientX,y:e.clientY}});canvas.addEventListener('pointerleave',()=>cursorPosition=null);}
 
 const packSize={helmet:[2,2],chest:[2,3],legs:[2,3],amulet:[1,1],ring:[1,1],shoulders:[2,2],knees:[1,2],offhand:[2,3],weapon:[2,4],belt:[2,1]};

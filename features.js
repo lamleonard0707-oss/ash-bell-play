@@ -35,7 +35,7 @@ function equipItem(id){changeEquipment(id)}
 function describeItem(item){if(!item)return '尚未裝備';const req=requirementText(item);
  return (item.power?'傷害 +'+item.power+'% · ':'')+item.description.replaceAll('靈息',resourceName())+(req?' · '+req+(meetsRequirement(item)?'':' ⚠️ 未達'):'')}
 function drawInventory(){drawArsenal()}
-function resetEquipment(){bag=[];equipped=emptyGear();itemSerial=0;lootSerial=0;dashFields.length=0;$('#gearbtn').hidden=false;$('#gearbtn').textContent='裝備';clearAim()}
+function resetEquipment(){bag=[];equipped=emptyGear();itemSerial=0;lootSerial=0;dashFields.length=0;$('#gearbtn').hidden=false;$('#gearbtn').textContent='裝備';$('#labelbtn').hidden=false;showLootLabels=true;$('#labelbtn').textContent='名牌 · 開';clearAim()}
 function drawGearDrop(d){drawGroundItem(d)}
 function onProjectileGearHit(sh,f){const weapon=weaponWithEffect(sh.element===0?'split':'bounce');if(!weapon||sh.enemy)return;
  if(weapon.effect==='split'&&sh.element===0&&!sh.fragment){const a=Math.atan2(sh.vy,sh.vx);for(const side of [-1,1]){fire(f.x,f.y,a+side*.48,sh.damage*(weapon.rarity==='legendary'?.6:.42),400,sh.color);const child=shots[shots.length-1];child.fragment=true;child.element=0;child.hit.add(f)}}

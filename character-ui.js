@@ -15,5 +15,72 @@ function drawCharacterPage(){if(!p)return;drawPaperdoll();drawAttributes();const
 const masteryMarks=['','','','IV','V','VI','VII'];
 function drawLogo(canvas,index,tier=0){canvas.width=80;canvas.height=80;const c=canvas.getContext('2d');drawLogoBase(c,index);if(tier>2){c.save();c.globalAlpha=.9;c.fillStyle='#0c0a08cc';c.fillRect(0,58,80,22);c.strokeStyle=['#000','#000','#000','#c9a35a','#d8b76a','#ecd08a','#ffe9b0'][tier];c.lineWidth=3;c.strokeRect(1.5,1.5,77,77);c.fillStyle=['#000','#000','#000','#e6c584','#f0d79a','#ffe6b4','#fff3d2'][tier];c.font='bold 15px Georgia';c.textAlign='center';c.fillText(masteryMarks[tier],40,75);c.restore()}}
 function drawLogoBase(c,index){if(index>=45&&angelReady){drawAngelLogoInto(c,index-45);return}if(index>=36&&index<45&&monkLogosReady){const i=index-36,w=monkLogoArt.naturalWidth/3,h=monkLogoArt.naturalHeight/3;c.drawImage(monkLogoArt,i%3*w,Math.floor(i/3)*h,w,h,0,0,80,80)}else if(index<36&&logosReady){const size=skillLogoArt.naturalWidth/6,sh=skillLogoArt.naturalHeight/6;c.drawImage(skillLogoArt,index%6*size,Math.floor(index/6)*sh,size,sh,0,0,80,80)}else{c.fillStyle=classes[chosen].color;c.fillRect(10,10,60,60)}}
-function drawIconTree(){const root=$('#treebranches'),scroll=root.scrollTop;root.replaceChildren();$('#treepoints').textContent=classes[chosen].name+' · LV. '+level+' · 技能點 '+skillPoints;for(let branch=0;branch<3;branch++){const spec=skillTrees[chosen][branch],col=document.createElement('section');col.className='icon-branch';col.style.setProperty('--branch',classes[chosen].color);const heading=document.createElement('h3');heading.textContent=spec.role;col.append(heading);for(let tier=0;tier<SKILL_LEVEL_CAP;tier++){const node1=spec.nodes[skillNodeIndex[tier]]||spec.nodes[0],learned=(skillLevel[branch]||0)>tier,available=(skillLevel[branch]||0)===tier&&skillPoints>0&&level>=skillLevelReq[tier+1],selected=selectedTreeNode.branch===branch&&selectedTreeNode.tier===tier;const node=document.createElement('button');node.className='skill-orb '+(learned?'learned':available?'available':'locked')+(selected?' selected':'');node.setAttribute('aria-label',node1[0]+(learned?'，已學習':available?'，可學習':'，未解鎖'));node.setAttribute('aria-pressed',selected);const icon=document.createElement('canvas');drawLogo(icon,chosen*9+branch*3+Math.min(2,tier),tier);const name=document.createElement('span'),status=document.createElement('small');name.textContent='LV.'+(tier+1)+' '+node1[0];status.textContent=learned?'已學習':level<skillLevelReq[tier+1]?'角色 LV.'+skillLevelReq[tier+1]+' 解鎖':available?'可學習':'先學上一級';node.append(icon,name,status);node.onclick=()=>{selectedTreeNode={branch,tier};drawTree()};col.append(node)}const active=document.createElement('button');active.className='tree-equip';active.textContent=activeSkill===branch?'使用中':'使用此招';active.disabled=!ranks[branch]||activeSkill===branch;active.onclick=()=>selectSkill(branch);col.append(active);root.append(col)}const {branch,tier}=selectedTreeNode,spec=skillTrees[chosen][branch],detailNode=spec.nodes[skillNodeIndex[tier]]||spec.nodes[0],have=skillLevel[branch]||0;$('#tree-detail-name').textContent='LV.'+(tier+1)+' '+detailNode[0];$('#tree-detail-text').textContent=detailNode[1];$('#tree-detail-cost').textContent='技能消耗 '+Math.max(12,Math.round((spec.cost-(rankForSkillLevel[tier+1]>=5?4:0)-(equipped.amulet?.effect==='mana'?8:0))*skillCostMult(branch)))+' '+resourceName()+' · 冷卻 '+(spec.cd*(rankForSkillLevel[tier+1]>=5?.8:1)*skillCooldownMult(branch)).toFixed(1)+' 秒';const learn=$('#tree-learn');learn.textContent=have>tier?'已學習':level<skillLevelReq[tier+1]?'需要角色 LV. '+skillLevelReq[tier+1]:have!==tier?'先學上一級':skillPoints<1?'技能點不足':'升到 LV.'+(tier+1)+' · 1 點';learn.disabled=have!==tier||skillPoints<1||level<skillLevelReq[tier+1];learn.onclick=()=>{learnSkill(branch);markDirty()};root.scrollTop=scroll}
+// 每條流派畫成：七個形態 ＋ 一條等級進度 ＋ 一粒可以連撳嘅升級掣。
+// 五十級唔可能逐級畫一粒珠，所以珠代表形態，等級寫喺下面。
+function drawIconTree(){
+ const root=$('#treebranches'),scroll=root.scrollTop;root.replaceChildren();
+ $('#treepoints').textContent=classes[chosen].name+' · LV. '+level+' · 技能點 '+skillPoints;
+ const respec=$('#tree-respec');
+ if(respec){
+  respec.textContent=canRespec()?'洗返技能點（每張圖一次）':respecStage===routeStage?'呢張圖已經洗過':'冇嘢可以洗';
+  respec.disabled=!canRespec();
+  respec.onclick=()=>respecSkills();
+ }
+ for(let branch=0;branch<3;branch++){
+  const spec=skillTrees[chosen][branch],col=document.createElement('section');col.className='icon-branch';
+  col.style.setProperty('--branch',classes[chosen].color);
+  const lv=skillLevel[branch]||0,cost=skillLevelCost(lv+1),nextForm=nextRankLevel(lv);
+  const heading=document.createElement('h3');
+  heading.textContent=spec.role+' · '+(lv?skillFormName(branch):spec.name)+' · LV.'+lv+' / '+SKILL_LEVEL_CAP;
+  col.append(heading);
+  for(let rank=1;rank<rankUnlockLevel.length;rank++){
+   const need=rankUnlockLevel[rank],tier=rank-1;
+   const nodeSpec=spec.nodes[tier]||spec.nodes[0];
+   const learned=lv>=need,available=!learned&&need===nextForm&&lv>0;
+   const selected=selectedTreeNode.branch===branch&&selectedTreeNode.tier===tier;
+   const node=document.createElement('button');
+   node.className='skill-orb '+(learned?'learned':available?'available':'locked')+(selected?' selected':'');
+   node.setAttribute('aria-label',nodeSpec[0]+(learned?'，已解鎖':'，需要技能 LV.'+need));
+   node.setAttribute('aria-pressed',selected);
+   const icon=document.createElement('canvas');drawLogo(icon,chosen*9+branch*3+Math.min(2,tier),tier);
+   const name=document.createElement('span'),status=document.createElement('small');
+   name.textContent='形態 '+rank+' · '+nodeSpec[0];
+   status.textContent=learned?'已解鎖（技能 LV.'+need+'）':'技能 LV.'+need+' 解鎖'+(available?'　仲差 '+(need-lv)+' 級':'');
+   node.append(icon,name,status);
+   node.onclick=()=>{selectedTreeNode={branch,tier};drawTree()};
+   col.append(node);
+  }
+  const levelUp=document.createElement('button');
+  levelUp.className='tree-levelup';
+  levelUp.textContent=lv>=SKILL_LEVEL_CAP?'已滿級 · LV.'+SKILL_LEVEL_CAP
+   :'＋ 升一級（'+cost+' 點）'+(nextForm?'　下一個形態 LV.'+nextForm:'');
+  levelUp.disabled=!canLearnSkillLevel(branch);
+  levelUp.onclick=()=>{learnSkill(branch);markDirty()};
+  col.append(levelUp);
+  const detail=document.createElement('small');detail.className='branch-note';
+  detail.textContent=lv?'傷害 +'+Math.round((skillLevelDamage(branch)-1)*100)+'%　冷卻／消耗 −'+Math.round(skillLevelRelief(branch)*100)+'%　加強上限 '+upgradeCapFor(branch)+'/'+UPGRADE_MAX
+   :'未學呢條流派';
+  col.append(detail);
+  const active=document.createElement('button');
+  active.className='tree-equip';
+  active.textContent=activeSkill===branch?'使用中':'使用此招';
+  active.disabled=!ranks[branch]||activeSkill===branch;
+  active.onclick=()=>selectSkill(branch);
+  col.append(active);
+  root.append(col);
+ }
+ const {branch,tier}=selectedTreeNode,spec=skillTrees[chosen][branch];
+ const detailNode=spec.nodes[tier]||spec.nodes[0],have=skillLevel[branch]||0,need=rankUnlockLevel[tier+1];
+ $('#tree-detail-name').textContent='形態 '+(tier+1)+'（技能 LV.'+need+'） '+detailNode[0];
+ $('#tree-detail-text').textContent=detailNode[1];
+ $('#tree-detail-cost').textContent='技能消耗 '+Math.max(12,Math.round((spec.cost-(tier+1>=5?4:0)-(equipped.amulet?.effect==='mana'?8:0))*skillCostMult(branch)))+' '+resourceName()
+  +' · 冷卻 '+(spec.cd*(tier+1>=5?.8:1)*skillCooldownMult(branch)).toFixed(1)+' 秒';
+ const learn=$('#tree-learn');
+ const cost=skillLevelCost(have+1);
+ learn.textContent=have>=SKILL_LEVEL_CAP?'已滿級':skillPoints<cost?'技能點不足（要 '+cost+' 點）'
+  :'升 '+spec.name+' 到 LV.'+(have+1)+' · '+cost+' 點';
+ learn.disabled=!canLearnSkillLevel(branch);
+ learn.onclick=()=>{learnSkill(branch);markDirty()};
+ root.scrollTop=scroll;
+}
 function initCharacterUI(){$('#character-tab').onclick=()=>setGearPage('character');$('#backpack-tab').onclick=()=>setGearPage('bag')}
