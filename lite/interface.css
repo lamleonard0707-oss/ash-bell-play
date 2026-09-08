@@ -1,0 +1,69 @@
+/* Menu scrolling must not inherit the combat surface's touch-action:none. */
+body{touch-action:auto}button{touch-action:manipulation}#game,#joystick,.actions button{touch-action:none}
+#panel,#select,#modal,.feature-panel{touch-action:pan-y;overscroll-behavior:contain}
+#panel button,#select button,#modal button{touch-action:pan-y}
+#panel{overflow:hidden}.feature-panel{min-height:0;flex-shrink:1;-webkit-overflow-scrolling:touch}
+.feature-panel:has(#treeview:not([hidden])){height:min(880px,calc(100dvh - 28px));display:flex;flex-direction:column;overflow:hidden}
+.panel-head{flex-shrink:0;gap:12px}.panel-head button{flex-shrink:0;min-width:44px;min-height:44px}
+#treeview:not([hidden]){display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+#treepoints{flex-shrink:0;margin:12px 0 4px}#treeview>.panel-note{flex-shrink:0;margin:6px 0 10px}
+#treebranches{flex:1;min-height:80px;overflow-y:auto;align-items:start;overscroll-behavior:contain;scrollbar-color:#9f7d4e #17110b;-webkit-overflow-scrolling:touch}
+.tree-detail{flex-shrink:0;margin-top:10px;padding:12px 15px}.tree-detail h3{font-size:17px;line-height:1.4}.tree-detail p{margin:6px 0;font-size:13px;line-height:1.55}.tree-detail button{min-height:44px;margin-top:9px;width:100%;line-height:1.4}.tree-detail button:disabled{cursor:default}
+.skill-orb{flex-shrink:0}.skill-orb span,.skill-orb small{line-height:1.5;overflow-wrap:anywhere}.tree-equip{min-height:44px;line-height:1.4}
+#classes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:min(900px,100%)}.classcard{padding:12px 5px}.classcard small{letter-spacing:0;font-size:8px}.classcard h3{font-size:20px;letter-spacing:1px}.classcard p{font-size:10px}
+/* Reserve independent HUD bands; long names wrap within their own band. */
+.quest>span,.quest b,.mapbox span{line-height:1.5;overflow-wrap:anywhere}.quest>span{letter-spacing:1px}
+#targetname{display:block;line-height:1.4;letter-spacing:1px}#targettype{line-height:1.45;letter-spacing:0}
+#toast{max-width:86%;line-height:1.5;text-align:center;overflow-wrap:anywhere}
+.level{width:130px;min-width:0;margin-top:0}.level>b,.level>span,.level>small{display:block;line-height:1.3}.level>small{margin:3px 0;font-size:10px;letter-spacing:0}#satiety{color:#e49c99}
+@media(max-width:600px){
+ header{padding:8px 10px;gap:8px}.topright button{min-height:38px;font-size:10px;padding:6px}.brand{font-size:16px;flex-shrink:0}
+ #panel{padding:8px}.feature-panel{padding:12px;max-height:calc(100dvh - 16px)}.feature-panel:has(#treeview:not([hidden])){height:calc(100dvh - 16px)}
+ .panel-head{padding-bottom:8px}.panel-head h2{font-size:19px;letter-spacing:2px}#treepoints{font-size:13px}#treeview>.panel-note{font-size:11px;line-height:1.5}#treebranches{padding:15px 7px;gap:8px}.icon-branch{gap:23px}.skill-orb canvas{width:54px;height:54px}.skill-orb{min-height:101px}.tree-detail small{font-size:11px}
+ .quest{top:64px;left:12px;width:calc(100% - 128px)}.quest b{font-size:12px;margin:3px 0}.quest small{font-size:10px}.quest>span{font-size:10px}
+ .mapbox{top:61px;right:8px;width:102px}.mapbox canvas{width:102px;height:69px}.mapbox span{font-size:10px;letter-spacing:0}
+ #targetbar,#bossbar{top:158px;left:50%;width:min(260px,85%)}#targetname{font-size:12px}#targettype{font-size:9px}#routehint{top:219px;font-size:11px}#toast{top:36%;font-size:16px;letter-spacing:1px}
+ .bottom-deck{height:112px}.vitals{bottom:10px;gap:11px}.level{width:118px}.orb{width:66px;height:66px}.level>b{font-size:13px}.level>span{font-size:11px}.level>small{font-size:9px;margin:2px 0}.level>div{margin:3px 0}
+ #classes .classcard h3{font-size:14px!important;white-space:nowrap}#classes .classcard p{display:none}#classes{flex-shrink:0}.classcard{min-height:48px}
+ #select{justify-content:flex-start;gap:0;padding:67px 12px 18px}.select-heading h1{font-size:32px;letter-spacing:5px}.select-heading .intro{font-size:12px;letter-spacing:1px}.roster-stage{min-height:130px;height:23vh;flex-shrink:0;width:100%;margin:8px 0}.selectednote{min-height:0;font-size:12px;line-height:1.6;margin:12px 0}.primary{flex-shrink:0;min-height:46px;padding:11px 22px}.continue-game{flex-shrink:0}.hint{font-size:10px;line-height:1.6}.original-label{font-size:9px}
+}
+@media(max-height:600px) and (orientation:landscape){
+ #select{display:grid;grid-template-columns:28% 1fr;grid-template-rows:auto minmax(100px,1fr) auto auto auto;gap:8px 18px;padding:55px 24px 15px;align-items:center;justify-content:normal}
+ #select>*{position:static;left:auto;top:auto;bottom:auto;right:auto;width:auto}.select-heading{grid-column:1;grid-row:1/3;text-align:left}.select-heading h1{font-size:29px;letter-spacing:3px}.select-heading .intro{line-height:1.6;font-size:11px;letter-spacing:0}.select-heading .eyebrow{font-size:9px;letter-spacing:0}
+ .roster-stage{grid-column:2;grid-row:1/3;width:100%!important;height:32vh;min-height:95px;margin:0}.selectednote{grid-column:2;font-size:10px;min-height:0;margin:0;line-height:1.5}.primary{grid-column:1;grid-row:3;min-width:0;min-height:40px;font-size:12px;padding:8px;letter-spacing:1px}.continue-game{grid-column:1;grid-row:4;min-width:0;padding:8px;margin:0}#select #classes{grid-column:2;grid-row:4;width:100%}.classcard{padding:5px;min-height:34px}#classes .classcard h3{font-size:14px!important;margin:2px 0}.hint{display:none}#select #continue-info{grid-column:1/3;font-size:9px;margin:0}.original-label{display:none}
+ .feature-panel:has(#treeview:not([hidden])){height:calc(100dvh - 16px);padding:10px 14px}.panel-head{padding-bottom:4px}.panel-head h2{font-size:17px}.panel-head button{min-height:36px;height:36px}.tree-detail{padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:3px 12px;margin-top:6px}.tree-detail h3,.tree-detail p,.tree-detail small{grid-column:1;margin:0;font-size:11px}.tree-detail button{grid-column:2;grid-row:1/4;width:170px;margin:0;align-self:center;font-size:12px}#treeview>.panel-note{font-size:10px;margin:3px 0}#treepoints{font-size:12px;margin:4px 0}#treebranches{min-height:60px;padding:12px}.icon-branch{gap:18px}.skill-orb{min-height:101px}
+ .quest{top:55px;left:16px;width:175px}.quest b{font-size:11px}.quest>span,.quest small{font-size:9px}.mapbox{top:52px;right:18px;width:95px}.mapbox canvas{width:95px;height:64px}.mapbox span{font-size:9px;letter-spacing:0}
+ #targetbar,#bossbar{top:57px;width:230px}#targetname{font-size:11px}#targettype{font-size:9px}#routehint{top:120px}#toast{top:42%;font-size:15px}.bottom-deck{height:82px}.vitals{bottom:6px}.orb{width:60px;height:60px}.level{width:120px}.level>small{display:block;font-size:8px;margin:1px 0}.level>b{font-size:12px}.level>div{margin:2px 0}.level>span{font-size:10px}.level #skillstatus{display:none}
+}
+/* v0.6: five independent stations on an arc, with mouse/touch hit targets. */
+.roster-stage{pointer-events:auto;height:min(46vh,430px);min-height:230px;width:min(920px,100%);margin:0}#roster{touch-action:pan-y;cursor:pointer}.roster-floor{pointer-events:none}
+#pace{pointer-events:auto;margin-top:7px;min-width:66px;min-height:32px;border:1px solid #8b724c;background:#18130de6;padding:5px 12px;font:11px system-ui;color:#d9c18e;touch-action:manipulation}#pace[aria-pressed=true]{background:#403220}
+@media(max-width:600px){.roster-stage{height:30vh;min-height:185px;width:100%;margin:5px 0}#select .select-heading h1{font-size:29px}.selectednote{font-size:11px;margin:9px 0}.quest{padding-bottom:4px}.quest #pace{position:absolute;top:65px;left:0;margin:0;min-height:28px;padding:4px 10px}#targetbar,#bossbar{top:173px}#routehint{top:235px}}
+@media(max-height:600px) and (orientation:landscape){#select{grid-template-columns:27% 1fr;grid-template-rows:minmax(145px,1fr) auto auto auto;padding-top:52px;gap:5px 18px}.select-heading{grid-column:1;grid-row:1}.roster-stage{grid-column:2;grid-row:1;min-height:145px;height:43vh}.primary{grid-row:2}.continue-game{grid-row:3}.selectednote{grid-column:2;grid-row:2}#select #classes{grid-column:2;grid-row:3}#select #continue-info{grid-row:4}.quest #pace{position:static;min-height:26px;padding:3px 10px;margin-top:4px}#targetbar,#bossbar{top:60px}#routehint{top:125px}}
+
+/* Seven-rank trees retain one visible learning action while the branches scroll. */
+#treebranches{max-height:none}.icon-branch{padding-bottom:18px}.tree-detail{background:#17110b;border:1px solid #775e3e}.skill-orb small{font-size:12px}#nextmap{position:absolute;top:270px;left:50%;transform:translateX(-50%);padding:12px 24px;background:#372916;color:#ffdc9b;border:1px solid #ab8950;pointer-events:auto;z-index:12;min-height:44px}
+@media(orientation:landscape) and (max-height:600px){#nextmap{top:155px}}
+.difficulty-choice{display:block;margin:12px auto;color:#d8bd89}.difficulty-choice select{background:#171414;color:#f4dfb5;border:1px solid #806748;padding:10px;font:inherit;max-width:90vw}
+#quickbar{position:fixed;left:50%;bottom:160px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;z-index:12}#quickbar button{white-space:pre-line;min-width:100px;background:#18161deb;border:1px solid #8f7650;color:#e9d5b0;padding:9px;font-size:14px}#quickbar .active{border-color:#f3d49a;box-shadow:0 0 12px #cf955333}#quickbar button:disabled{opacity:.5}#difficulty-label{font-size:13px;color:#bda786}
+#talent-web{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:16px 0 28px;background:linear-gradient(30deg,transparent 49.7%,#95724344 50%,transparent 50.3%),linear-gradient(-30deg,transparent 49.7%,#95724344 50%,transparent 50.3%)}.talent-node{white-space:pre-line;text-align:left;line-height:1.65;border:1px solid #77613f;background:#18141d;padding:16px;color:#decbb2;font-size:14px}.talent-node.learned{border-color:#acbe81}.talent-node:disabled{opacity:.55}
+@media(max-width:650px){#quickbar{bottom:auto;top:125px;gap:3px}#quickbar button{min-width:70px;font-size:12px;padding:6px}#difficulty-label{display:none}#talent-web{grid-template-columns:1fr}.talent-node{min-height:100px}}
+#pack-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));aspect-ratio:10/6;max-width:640px;position:relative;margin:18px auto;background:#08090d;border:3px solid #665239;gap:0}#pack-grid button{border-radius:0;margin:0;padding:0;min-width:0;min-height:0}.pack-cell{background:#131217;border:1px solid #51453377;z-index:0}.pack-item{background:#241e24ee;border:2px solid;z-index:1;overflow:hidden}.pack-item canvas{width:100%;height:100%;object-fit:contain;pointer-events:none}.pack-item.selected{box-shadow:inset 0 0 22px #f7dba066;outline:2px solid #ffdfa5;z-index:2}#pack-overflow{display:flex;flex-wrap:wrap;gap:8px;border:1px dashed #c47d54;padding:10px}#pack-detail{white-space:pre-line;min-height:50px}#pack-detail button{margin-right:8px}
+#tree-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}#tree-scroll #treebranches{overflow:visible;min-height:0;flex:none}#tree-scroll>h3{font-size:16px;color:#d5bd91;margin:18px 8px 0}
+
+/* v0.10 progression panels */
+#upgrade-web{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:10px 0 22px}
+#upgrade-web>p{grid-column:1/-1;margin:0 0 4px}
+.upgrade-branch{border:1px solid #6b5940;background:#161219;padding:12px;display:flex;flex-direction:column;gap:8px}
+.upgrade-branch h4{margin:0 0 4px;font:15px Georgia;color:#e6d3ae}
+.upgrade-row{white-space:pre-line;text-align:left;line-height:1.5;border:1px solid #5f4d35;background:#1d1720;color:#d8c6a8;padding:9px 11px;font-size:13px}
+.upgrade-row.learned{border-color:#c9a35a;color:#f2e0bd}
+.upgrade-row:disabled{opacity:.5}
+#attr-panel{display:flex;flex-direction:column;gap:8px;margin:6px 0 12px}
+#attr-panel>p{margin:0}
+.attr-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;border:1px solid #5f4d35;background:#161219;padding:9px 12px}
+.attr-row b{font:16px Georgia;color:#f0dcb4;min-width:96px}
+.attr-row small{color:#a99madd;color:#a99a7d;font-size:12px;line-height:1.5}
+.attr-row button{width:38px;height:32px;font-size:18px;border:1px solid #8d7448;background:#26202b;color:#f0dcb4}
+.attr-row button:disabled{opacity:.4}
+@media(max-width:650px){#upgrade-web{grid-template-columns:1fr}.attr-row{grid-template-columns:auto 1fr auto;gap:8px}.attr-row b{min-width:74px;font-size:14px}}
